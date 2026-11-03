@@ -490,9 +490,11 @@ class ViewController: NSViewController {
     }
 
     private func convertScreenToView(_ screenPoint: CGPoint) -> CGPoint {
-        // NSEvent.mouseLocation is already in screen coordinates
-        // Our view also uses screen coordinates, so return as-is
-        return screenPoint
+        // NSEvent.mouseLocation is in global screen coordinates (all displays);
+        // each overlay covers one display, so convert to this window's own coordinates.
+        // Points on other displays fall outside the view and are simply clipped.
+        guard let window = view.window else { return screenPoint }
+        return view.convert(window.convertPoint(fromScreen: screenPoint), from: nil)
     }
 
     private func clearShortcutsIfNeeded() {
@@ -545,11 +547,11 @@ class ViewController: NSViewController {
             return
         }
 
-        // NSEvent.mouseLocation is already in screen coordinates with origin at bottom-left
-        // Our view also has origin at bottom-left, so coordinates match directly
+        // Convert from global screen coordinates to this display's overlay
+        let point = convertScreenToView(location)
         let newOrigin = CGPoint(
-            x: location.x - 75,  // Center the 150x150 circle
-            y: location.y - 75   // Y coordinate is correct as-is
+            x: point.x - 75,  // Center the 150x150 circle
+            y: point.y - 75
         )
 
         // Update frame using CATransaction to avoid animation
