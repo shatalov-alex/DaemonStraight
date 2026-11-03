@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/platform-macOS%2013.5%2B-lightgrey" alt="Platform: macOS 13.5+">
   <img src="https://img.shields.io/badge/Swift-5-orange" alt="Swift 5">
   <img src="https://img.shields.io/badge/UI-AppKit-blue" alt="AppKit">
+  <a href="https://github.com/shatalov-alex/DaemonStraight/releases/latest"><img src="https://img.shields.io/github/v/release/shatalov-alex/DaemonStraight" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
 </p>
 
@@ -44,7 +45,17 @@
 
 ## Installation
 
-DaemonStraight is currently distributed as source code.
+### Download
+
+1. Download `DaemonStraight-<version>.dmg` from the [latest release](https://github.com/shatalov-alex/DaemonStraight/releases/latest).
+2. Open it and drag **DaemonStraight** to **Applications**.
+3. Open the app. It isn't notarized by Apple, so the first time macOS says it can't verify the developer.
+   Close the message, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
+4. Grant Accessibility access (see [below](#granting-accessibility-access)).
+
+The app runs on both Apple silicon and Intel Macs.
+
+### Build from source
 
 1. Clone the repository:
    ```bash
@@ -59,7 +70,7 @@ DaemonStraight is currently distributed as source code.
    [developer.apple.com/account](https://developer.apple.com/account).
 3. Open `DaemonStraight.xcodeproj` in Xcode and press **⌘R** to build and run.
 
-To produce a standalone release build in `build/Release/`, run:
+To produce a standalone universal release build in `build/Release/`, run:
 
 ```bash
 ./scripts/build_release.sh

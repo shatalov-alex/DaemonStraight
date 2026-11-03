@@ -16,6 +16,7 @@ echo "🧹 Cleaning previous builds..."
 xcodebuild clean -project DaemonStraight.xcodeproj -configuration Release
 
 # Build the app in Release mode
+# Strip symbols and map source paths so the binary doesn't contain local build paths
 echo "🔨 Building Release configuration..."
 xcodebuild build \
     -project DaemonStraight.xcodeproj \
@@ -23,13 +24,24 @@ xcodebuild build \
     -arch x86_64 \
     -arch arm64 \
     CODE_SIGN_IDENTITY="-" \
-    CODE_SIGNING_REQUIRED=NO
+    CODE_SIGNING_REQUIRED=NO \
+    DEPLOYMENT_POSTPROCESSING=YES \
+    STRIP_INSTALLED_PRODUCT=YES \
+    OTHER_SWIFT_FLAGS="-file-prefix-map $PWD/=" \
+    DEBUG_INFORMATION_FORMAT=dwarf-with-dsym
 
 # Find the built app
 BUILD_DIR="build/Release"
 APP_PATH="$BUILD_DIR/DaemonStraight.app"
 
 if [ -d "$APP_PATH" ]; then
+    # Re-sign without the debugger (get-task-allow) entitlement, keeping the App Sandbox ones
+    ENTITLEMENTS="$(mktemp)"
+    codesign -d --entitlements - --xml "$APP_PATH" > "$ENTITLEMENTS" 2>/dev/null
+    /usr/libexec/PlistBuddy -c "Delete :com.apple.security.get-task-allow" "$ENTITLEMENTS" 2>/dev/null || true
+    codesign --force --sign - --entitlements "$ENTITLEMENTS" "$APP_PATH"
+    rm -f "$ENTITLEMENTS"
+
     echo ""
     echo "✅ Build successful!"
     echo ""
