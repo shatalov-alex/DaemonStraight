@@ -1,0 +1,11 @@
+// Code signing settings for the DaemonStraight target.
+//
+// To sign with your own Apple Developer team, create Config/Local.xcconfig
+// (ignored by git) with a single line:
+//
+//     DEVELOPMENT_TEAM = YOUR_TEAM_ID
+//
+// A stable signing identity matters for this app: macOS ties the Accessibility
+// permission to the code signature, so ad-hoc builds lose it on every rebuild.
+
+#include? "Local.xcconfig"

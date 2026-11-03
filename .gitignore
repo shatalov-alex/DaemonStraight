@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Xcode user-specific data
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Local signing settings (developer team ID)
+Config/Local.xcconfig
+
+# Build output
+build/
+DerivedData/
+*.xcarchive
+*.dmg
+*.zip
+
+# Python
+__pycache__/
