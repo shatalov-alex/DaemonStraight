@@ -30,11 +30,43 @@ class SettingsManager {
         static let showFunctionKeys = "showFunctionKeys"
         static let showAlphanumericKeys = "showAlphanumericKeys"
         static let showSpecialKeys = "showSpecialKeys"
+        static let showModifierClicks = "showModifierClicks"
+        static let shortcutPosition = "shortcutPosition"
+        static let shortcutKeySize = "shortcutKeySize"
+
+        // Spotlight
+        static let spotlightDiameter = "spotlightDiameter"
+        static let spotlightDimOpacity = "spotlightDimOpacity"
+
+        // Features turned on at launch
+        static let launchWithMouse = "launchWithMouse"
+        static let launchWithKeyboard = "launchWithKeyboard"
+        static let launchWithDrawing = "launchWithDrawing"
+        static let launchWithSpotlight = "launchWithSpotlight"
 
         // Hotkeys
         static let mouseToggleHotkey = "mouseToggleHotkey"
         static let keyboardToggleHotkey = "keyboardToggleHotkey"
         static let drawingToggleHotkey = "drawingToggleHotkey"
+        static let spotlightToggleHotkey = "spotlightToggleHotkey"
+        static let allToggleHotkey = "allToggleHotkey"
+    }
+
+    // Screen corner where pressed shortcuts are shown
+    enum ShortcutPosition: Int, CaseIterable {
+        case bottomLeft, bottomRight, topLeft, topRight
+
+        var title: String {
+            switch self {
+            case .bottomLeft: return "Bottom Left"
+            case .bottomRight: return "Bottom Right"
+            case .topLeft: return "Top Left"
+            case .topRight: return "Top Right"
+            }
+        }
+
+        var isLeft: Bool { self == .bottomLeft || self == .topLeft }
+        var isTop: Bool { self == .topLeft || self == .topRight }
     }
 
     // MARK: - Mouse Highlighting Settings
@@ -94,6 +126,55 @@ class SettingsManager {
     var showSpecialKeys: Bool {
         get { defaults.object(forKey: Keys.showSpecialKeys) == nil ? true : defaults.bool(forKey: Keys.showSpecialKeys) }
         set { defaults.set(newValue, forKey: Keys.showSpecialKeys) }
+    }
+
+    // Modifier + mouse click combinations (e.g. ⌘ Click); plain clicks are never shown
+    var showModifierClicks: Bool {
+        get { defaults.object(forKey: Keys.showModifierClicks) == nil ? true : defaults.bool(forKey: Keys.showModifierClicks) }
+        set { defaults.set(newValue, forKey: Keys.showModifierClicks) }
+    }
+
+    var shortcutPosition: ShortcutPosition {
+        get { ShortcutPosition(rawValue: defaults.integer(forKey: Keys.shortcutPosition)) ?? .bottomLeft }
+        set { defaults.set(newValue.rawValue, forKey: Keys.shortcutPosition) }
+    }
+
+    var shortcutKeySize: CGFloat {
+        get { CGFloat(defaults.double(forKey: Keys.shortcutKeySize)) > 0 ? CGFloat(defaults.double(forKey: Keys.shortcutKeySize)) : 70.0 }
+        set { defaults.set(Double(newValue), forKey: Keys.shortcutKeySize) }
+    }
+
+    // MARK: - Spotlight Settings
+    var spotlightDiameter: CGFloat {
+        get { CGFloat(defaults.double(forKey: Keys.spotlightDiameter)) > 0 ? CGFloat(defaults.double(forKey: Keys.spotlightDiameter)) : 300.0 }
+        set { defaults.set(Double(newValue), forKey: Keys.spotlightDiameter) }
+    }
+
+    // Opacity of the dimmed area, 0...1
+    var spotlightDimOpacity: CGFloat {
+        get { CGFloat(defaults.double(forKey: Keys.spotlightDimOpacity)) > 0 ? CGFloat(defaults.double(forKey: Keys.spotlightDimOpacity)) : 0.6 }
+        set { defaults.set(Double(newValue), forKey: Keys.spotlightDimOpacity) }
+    }
+
+    // MARK: - Launch Settings (all features are off at launch by default)
+    var launchWithMouse: Bool {
+        get { defaults.bool(forKey: Keys.launchWithMouse) }
+        set { defaults.set(newValue, forKey: Keys.launchWithMouse) }
+    }
+
+    var launchWithKeyboard: Bool {
+        get { defaults.bool(forKey: Keys.launchWithKeyboard) }
+        set { defaults.set(newValue, forKey: Keys.launchWithKeyboard) }
+    }
+
+    var launchWithDrawing: Bool {
+        get { defaults.bool(forKey: Keys.launchWithDrawing) }
+        set { defaults.set(newValue, forKey: Keys.launchWithDrawing) }
+    }
+
+    var launchWithSpotlight: Bool {
+        get { defaults.bool(forKey: Keys.launchWithSpotlight) }
+        set { defaults.set(newValue, forKey: Keys.launchWithSpotlight) }
     }
 
     // MARK: - Hotkeys
@@ -224,7 +305,30 @@ class SettingsManager {
         }
     }
 
+    var spotlightToggleHotkey: Hotkey {
+        // Default: ⌃⌥⌘S
+        get { hotkey(forKey: Keys.spotlightToggleHotkey) ?? Hotkey(keyCode: 1, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.spotlightToggleHotkey) }
+    }
+
+    var allToggleHotkey: Hotkey {
+        // Default: ⌃⌥⌘A
+        get { hotkey(forKey: Keys.allToggleHotkey) ?? Hotkey(keyCode: 0, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.allToggleHotkey) }
+    }
+
     // MARK: - Helper Methods
+    private func hotkey(forKey key: String) -> Hotkey? {
+        guard let data = defaults.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(Hotkey.self, from: data)
+    }
+
+    private func setHotkey(_ hotkey: Hotkey, forKey key: String) {
+        if let data = try? JSONEncoder().encode(hotkey) {
+            defaults.set(data, forKey: key)
+        }
+    }
+
     private func colorForKey(_ key: String) -> NSColor? {
         guard let data = defaults.data(forKey: key) else { return nil }
         return try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSColor.self, from: data)
@@ -252,5 +356,16 @@ class SettingsManager {
         defaults.removeObject(forKey: Keys.mouseToggleHotkey)
         defaults.removeObject(forKey: Keys.keyboardToggleHotkey)
         defaults.removeObject(forKey: Keys.drawingToggleHotkey)
+        defaults.removeObject(forKey: Keys.spotlightToggleHotkey)
+        defaults.removeObject(forKey: Keys.allToggleHotkey)
+        defaults.removeObject(forKey: Keys.showModifierClicks)
+        defaults.removeObject(forKey: Keys.shortcutPosition)
+        defaults.removeObject(forKey: Keys.shortcutKeySize)
+        defaults.removeObject(forKey: Keys.spotlightDiameter)
+        defaults.removeObject(forKey: Keys.spotlightDimOpacity)
+        defaults.removeObject(forKey: Keys.launchWithMouse)
+        defaults.removeObject(forKey: Keys.launchWithKeyboard)
+        defaults.removeObject(forKey: Keys.launchWithDrawing)
+        defaults.removeObject(forKey: Keys.launchWithSpotlight)
     }
 }

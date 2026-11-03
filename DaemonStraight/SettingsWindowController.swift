@@ -20,6 +20,12 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var mouseWidthSlider: NSSlider!
     private var mouseWidthLabel: NSTextField!
 
+    // Spotlight controls
+    private var spotlightDiameterSlider: NSSlider!
+    private var spotlightDiameterLabel: NSTextField!
+    private var spotlightDimSlider: NSSlider!
+    private var spotlightDimLabel: NSTextField!
+
     // Drawing controls
     private var drawingColorWell: NSColorWell!
     private var drawingWidthSlider: NSSlider!
@@ -30,15 +36,27 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var showFunctionKeysCheckbox: NSButton!
     private var showAlphanumericCheckbox: NSButton!
     private var showSpecialKeysCheckbox: NSButton!
+    private var showModifierClicksCheckbox: NSButton!
+    private var shortcutPositionPopup: NSPopUpButton!
+    private var keySizeSlider: NSSlider!
+    private var keySizeLabel: NSTextField!
 
     // Hotkey controls
     private var mouseHotkeyRecorder: HotkeyRecorderView!
     private var keyboardHotkeyRecorder: HotkeyRecorderView!
     private var drawingHotkeyRecorder: HotkeyRecorderView!
+    private var spotlightHotkeyRecorder: HotkeyRecorderView!
+    private var allHotkeyRecorder: HotkeyRecorderView!
+
+    // Launch controls
+    private var launchMouseCheckbox: NSButton!
+    private var launchKeyboardCheckbox: NSButton!
+    private var launchDrawingCheckbox: NSButton!
+    private var launchSpotlightCheckbox: NSButton!
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 690),
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -58,140 +76,12 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let contentView = NSView(frame: window.contentLayoutRect)
         window.contentView = contentView
 
-        var yPosition: CGFloat = 650
-
-        // MARK: - Mouse Highlighting Section
-        let mouseLabel = createSectionLabel("Mouse Highlighting", frame: NSRect(x: 20, y: yPosition, width: 560, height: 24))
-        contentView.addSubview(mouseLabel)
-        yPosition -= 30
-
-        // Default color
-        contentView.addSubview(createLabel("Default Color:", frame: NSRect(x: 30, y: yPosition + 3, width: 120, height: 20)))
-        mouseDefaultColorWell = NSColorWell(frame: NSRect(x: 160, y: yPosition, width: 80, height: 26))
-        mouseDefaultColorWell.target = self
-        mouseDefaultColorWell.action = #selector(colorChanged)
-        contentView.addSubview(mouseDefaultColorWell)
-        yPosition -= 30
-
-        // Left click color
-        contentView.addSubview(createLabel("Left Click Color:", frame: NSRect(x: 30, y: yPosition + 3, width: 120, height: 20)))
-        mouseLeftClickColorWell = NSColorWell(frame: NSRect(x: 160, y: yPosition, width: 80, height: 26))
-        mouseLeftClickColorWell.target = self
-        mouseLeftClickColorWell.action = #selector(colorChanged)
-        contentView.addSubview(mouseLeftClickColorWell)
-        yPosition -= 30
-
-        // Right click color
-        contentView.addSubview(createLabel("Right Click Color:", frame: NSRect(x: 30, y: yPosition + 3, width: 120, height: 20)))
-        mouseRightClickColorWell = NSColorWell(frame: NSRect(x: 160, y: yPosition, width: 80, height: 26))
-        mouseRightClickColorWell.target = self
-        mouseRightClickColorWell.action = #selector(colorChanged)
-        contentView.addSubview(mouseRightClickColorWell)
-        yPosition -= 30
-
-        // Diameter
-        contentView.addSubview(createLabel("Diameter:", frame: NSRect(x: 30, y: yPosition, width: 120, height: 20)))
-        mouseDiameterSlider = NSSlider(frame: NSRect(x: 160, y: yPosition, width: 300, height: 20))
-        mouseDiameterSlider.minValue = 50
-        mouseDiameterSlider.maxValue = 300
-        mouseDiameterSlider.target = self
-        mouseDiameterSlider.action = #selector(sliderChanged)
-        contentView.addSubview(mouseDiameterSlider)
-        mouseDiameterLabel = createLabel("150", frame: NSRect(x: 470, y: yPosition, width: 50, height: 20))
-        mouseDiameterLabel.alignment = .left
-        contentView.addSubview(mouseDiameterLabel)
-        yPosition -= 30
-
-        // Width
-        contentView.addSubview(createLabel("Ring Width:", frame: NSRect(x: 30, y: yPosition, width: 120, height: 20)))
-        mouseWidthSlider = NSSlider(frame: NSRect(x: 160, y: yPosition, width: 300, height: 20))
-        mouseWidthSlider.minValue = 1
-        mouseWidthSlider.maxValue = 10
-        mouseWidthSlider.target = self
-        mouseWidthSlider.action = #selector(sliderChanged)
-        contentView.addSubview(mouseWidthSlider)
-        mouseWidthLabel = createLabel("4", frame: NSRect(x: 470, y: yPosition, width: 50, height: 20))
-        mouseWidthLabel.alignment = .left
-        contentView.addSubview(mouseWidthLabel)
-        yPosition -= 40
-
-        // MARK: - Drawing Section
-        let drawingLabel = createSectionLabel("Drawing Mode", frame: NSRect(x: 20, y: yPosition, width: 560, height: 24))
-        contentView.addSubview(drawingLabel)
-        yPosition -= 30
-
-        // Drawing color
-        contentView.addSubview(createLabel("Line Color:", frame: NSRect(x: 30, y: yPosition + 3, width: 120, height: 20)))
-        drawingColorWell = NSColorWell(frame: NSRect(x: 160, y: yPosition, width: 80, height: 26))
-        drawingColorWell.target = self
-        drawingColorWell.action = #selector(colorChanged)
-        contentView.addSubview(drawingColorWell)
-        yPosition -= 30
-
-        // Drawing width
-        contentView.addSubview(createLabel("Line Width:", frame: NSRect(x: 30, y: yPosition, width: 120, height: 20)))
-        drawingWidthSlider = NSSlider(frame: NSRect(x: 160, y: yPosition, width: 300, height: 20))
-        drawingWidthSlider.minValue = 1
-        drawingWidthSlider.maxValue = 15
-        drawingWidthSlider.target = self
-        drawingWidthSlider.action = #selector(sliderChanged)
-        contentView.addSubview(drawingWidthSlider)
-        drawingWidthLabel = createLabel("5", frame: NSRect(x: 470, y: yPosition, width: 50, height: 20))
-        drawingWidthLabel.alignment = .left
-        contentView.addSubview(drawingWidthLabel)
-        yPosition -= 40
-
-        // MARK: - Keyboard Display Filter
-        let keyboardLabel = createSectionLabel("Keyboard Display Filter", frame: NSRect(x: 20, y: yPosition, width: 560, height: 24))
-        contentView.addSubview(keyboardLabel)
-        yPosition -= 30
-
-        let showKeysLabel = createLabel("Show keys:", frame: NSRect(x: 30, y: yPosition, width: 300, height: 20))
-        showKeysLabel.alignment = .left
-        contentView.addSubview(showKeysLabel)
-        yPosition -= 25
-
-        showModifiersCheckbox = createCheckbox("Modifier keys (⌘⌃⌥⇧)", frame: NSRect(x: 40, y: yPosition, width: 350, height: 20))
-        contentView.addSubview(showModifiersCheckbox)
-        yPosition -= 25
-
-        showFunctionKeysCheckbox = createCheckbox("Function keys (F1-F12)", frame: NSRect(x: 40, y: yPosition, width: 350, height: 20))
-        contentView.addSubview(showFunctionKeysCheckbox)
-        yPosition -= 25
-
-        showAlphanumericCheckbox = createCheckbox("Plain typing (A-Z, 0-9 without ⌘⌃⌥)", frame: NSRect(x: 40, y: yPosition, width: 350, height: 20))
-        contentView.addSubview(showAlphanumericCheckbox)
-        yPosition -= 25
-
-        showSpecialKeysCheckbox = createCheckbox("Special keys (Esc, Tab, Return, Delete, arrows)", frame: NSRect(x: 40, y: yPosition, width: 350, height: 20))
-        contentView.addSubview(showSpecialKeysCheckbox)
-        yPosition -= 40
-
-        // MARK: - Hotkeys Section
-        let hotkeysLabel = createSectionLabel("Hotkeys", frame: NSRect(x: 20, y: yPosition, width: 560, height: 24))
-        contentView.addSubview(hotkeysLabel)
-        yPosition -= 30
-
-        // Mouse toggle hotkey
-        contentView.addSubview(createLabel("Toggle Mouse:", frame: NSRect(x: 30, y: yPosition, width: 120, height: 20)))
-        mouseHotkeyRecorder = HotkeyRecorderView(frame: NSRect(x: 160, y: yPosition - 4, width: 200, height: 28))
-        mouseHotkeyRecorder.onChange = { [weak self] in self?.saveHotkeys() }
-        contentView.addSubview(mouseHotkeyRecorder)
-        yPosition -= 35
-
-        // Keyboard toggle hotkey
-        contentView.addSubview(createLabel("Toggle Keyboard:", frame: NSRect(x: 30, y: yPosition, width: 120, height: 20)))
-        keyboardHotkeyRecorder = HotkeyRecorderView(frame: NSRect(x: 160, y: yPosition - 4, width: 200, height: 28))
-        keyboardHotkeyRecorder.onChange = { [weak self] in self?.saveHotkeys() }
-        contentView.addSubview(keyboardHotkeyRecorder)
-        yPosition -= 35
-
-        // Drawing toggle hotkey
-        contentView.addSubview(createLabel("Toggle Drawing:", frame: NSRect(x: 30, y: yPosition, width: 120, height: 20)))
-        drawingHotkeyRecorder = HotkeyRecorderView(frame: NSRect(x: 160, y: yPosition - 4, width: 200, height: 28))
-        drawingHotkeyRecorder.onChange = { [weak self] in self?.saveHotkeys() }
-        contentView.addSubview(drawingHotkeyRecorder)
-        yPosition -= 50
+        let tabView = NSTabView(frame: NSRect(x: 12, y: 60, width: 576, height: 428))
+        contentView.addSubview(tabView)
+        tabView.addTabViewItem(createTab("Mouse", in: tabView, setup: setupMouseTab))
+        tabView.addTabViewItem(createTab("Keyboard", in: tabView, setup: setupKeyboardTab))
+        tabView.addTabViewItem(createTab("Drawing", in: tabView, setup: setupDrawingTab))
+        tabView.addTabViewItem(createTab("General", in: tabView, setup: setupGeneralTab))
 
         // MARK: - Buttons
         let resetButton = NSButton(frame: NSRect(x: 30, y: 20, width: 150, height: 32))
@@ -208,6 +98,172 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         closeButton.action = #selector(closeWindow)
         closeButton.keyEquivalent = "\r"
         contentView.addSubview(closeButton)
+    }
+
+    // setup receives the tab's view and the y of its first row (controls are laid out from the top)
+    private func createTab(_ title: String, in tabView: NSTabView, setup: (NSView, CGFloat) -> Void) -> NSTabViewItem {
+        let item = NSTabViewItem(identifier: title)
+        item.label = title
+        let view = NSView(frame: NSRect(origin: .zero, size: tabView.contentRect.size))
+        setup(view, view.bounds.height - 40)
+        item.view = view
+        return item
+    }
+
+    // MARK: - Mouse Tab
+    private func setupMouseTab(_ view: NSView, _ top: CGFloat) {
+        var yPosition = top
+
+        view.addSubview(createSectionLabel("Mouse Highlighting", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        mouseDefaultColorWell = addColorRow("Default Color:", to: view, y: yPosition)
+        yPosition -= 30
+        mouseLeftClickColorWell = addColorRow("Left Click Color:", to: view, y: yPosition)
+        yPosition -= 30
+        mouseRightClickColorWell = addColorRow("Right Click Color:", to: view, y: yPosition)
+        yPosition -= 30
+
+        (mouseDiameterSlider, mouseDiameterLabel) = addSliderRow("Diameter:", to: view, y: yPosition, min: 50, max: 300)
+        yPosition -= 30
+        (mouseWidthSlider, mouseWidthLabel) = addSliderRow("Ring Width:", to: view, y: yPosition, min: 1, max: 10)
+        yPosition -= 40
+
+        view.addSubview(createSectionLabel("Spotlight", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        (spotlightDiameterSlider, spotlightDiameterLabel) = addSliderRow("Diameter:", to: view, y: yPosition, min: 150, max: 800)
+        yPosition -= 30
+        (spotlightDimSlider, spotlightDimLabel) = addSliderRow("Dimming:", to: view, y: yPosition, min: 20, max: 90)
+    }
+
+    // MARK: - Keyboard Tab
+    private func setupKeyboardTab(_ view: NSView, _ top: CGFloat) {
+        var yPosition = top
+
+        view.addSubview(createSectionLabel("Keyboard Display Filter", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        let showKeysLabel = createLabel("Show keys:", frame: NSRect(x: 30, y: yPosition, width: 300, height: 20))
+        showKeysLabel.alignment = .left
+        view.addSubview(showKeysLabel)
+        yPosition -= 25
+
+        showModifiersCheckbox = createCheckbox("Modifier keys (⌘⌃⌥⇧)", frame: NSRect(x: 40, y: yPosition, width: 400, height: 20))
+        view.addSubview(showModifiersCheckbox)
+        yPosition -= 25
+
+        showFunctionKeysCheckbox = createCheckbox("Function keys (F1-F12)", frame: NSRect(x: 40, y: yPosition, width: 400, height: 20))
+        view.addSubview(showFunctionKeysCheckbox)
+        yPosition -= 25
+
+        showAlphanumericCheckbox = createCheckbox("Plain typing (A-Z, 0-9 without ⌘⌃⌥)", frame: NSRect(x: 40, y: yPosition, width: 400, height: 20))
+        view.addSubview(showAlphanumericCheckbox)
+        yPosition -= 25
+
+        showSpecialKeysCheckbox = createCheckbox("Special keys (Esc, Tab, Return, Delete, arrows)", frame: NSRect(x: 40, y: yPosition, width: 400, height: 20))
+        view.addSubview(showSpecialKeysCheckbox)
+        yPosition -= 25
+
+        showModifierClicksCheckbox = createCheckbox("Mouse clicks with modifiers (⌘ Click, ⌥ Right Click)", frame: NSRect(x: 40, y: yPosition, width: 400, height: 20))
+        view.addSubview(showModifierClicksCheckbox)
+        yPosition -= 40
+
+        view.addSubview(createSectionLabel("Appearance", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 32
+
+        view.addSubview(createLabel("Position:", frame: NSRect(x: 30, y: yPosition + 3, width: 120, height: 20)))
+        shortcutPositionPopup = NSPopUpButton(frame: NSRect(x: 158, y: yPosition, width: 160, height: 26), pullsDown: false)
+        shortcutPositionPopup.addItems(withTitles: SettingsManager.ShortcutPosition.allCases.map { $0.title })
+        shortcutPositionPopup.target = self
+        shortcutPositionPopup.action = #selector(shortcutPositionChanged)
+        view.addSubview(shortcutPositionPopup)
+        yPosition -= 32
+
+        (keySizeSlider, keySizeLabel) = addSliderRow("Key Size:", to: view, y: yPosition, min: 40, max: 110)
+    }
+
+    // MARK: - Drawing Tab
+    private func setupDrawingTab(_ view: NSView, _ top: CGFloat) {
+        var yPosition = top
+
+        view.addSubview(createSectionLabel("Drawing Mode", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        drawingColorWell = addColorRow("Line Color:", to: view, y: yPosition)
+        yPosition -= 30
+
+        (drawingWidthSlider, drawingWidthLabel) = addSliderRow("Line Width:", to: view, y: yPosition, min: 1, max: 15)
+    }
+
+    // MARK: - General Tab
+    private func setupGeneralTab(_ view: NSView, _ top: CGFloat) {
+        var yPosition = top
+
+        view.addSubview(createSectionLabel("Hotkeys", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        mouseHotkeyRecorder = addHotkeyRow("Toggle Mouse:", to: view, y: yPosition)
+        yPosition -= 35
+        keyboardHotkeyRecorder = addHotkeyRow("Toggle Keyboard:", to: view, y: yPosition)
+        yPosition -= 35
+        drawingHotkeyRecorder = addHotkeyRow("Toggle Drawing:", to: view, y: yPosition)
+        yPosition -= 35
+        spotlightHotkeyRecorder = addHotkeyRow("Toggle Spotlight:", to: view, y: yPosition)
+        yPosition -= 35
+        allHotkeyRecorder = addHotkeyRow("Toggle All:", to: view, y: yPosition)
+        yPosition -= 45
+
+        view.addSubview(createSectionLabel("At Launch", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        let launchLabel = createLabel("Turn on when the app starts:", frame: NSRect(x: 30, y: yPosition, width: 300, height: 20))
+        launchLabel.alignment = .left
+        view.addSubview(launchLabel)
+        yPosition -= 25
+
+        launchMouseCheckbox = createCheckbox("Mouse Highlighting", frame: NSRect(x: 40, y: yPosition, width: 220, height: 20))
+        view.addSubview(launchMouseCheckbox)
+        launchKeyboardCheckbox = createCheckbox("Keyboard Display", frame: NSRect(x: 280, y: yPosition, width: 220, height: 20))
+        view.addSubview(launchKeyboardCheckbox)
+        yPosition -= 25
+
+        launchDrawingCheckbox = createCheckbox("Drawing Mode", frame: NSRect(x: 40, y: yPosition, width: 220, height: 20))
+        view.addSubview(launchDrawingCheckbox)
+        launchSpotlightCheckbox = createCheckbox("Spotlight", frame: NSRect(x: 280, y: yPosition, width: 220, height: 20))
+        view.addSubview(launchSpotlightCheckbox)
+    }
+
+    // MARK: - Control Helpers
+    private func addColorRow(_ title: String, to view: NSView, y: CGFloat) -> NSColorWell {
+        view.addSubview(createLabel(title, frame: NSRect(x: 30, y: y + 3, width: 120, height: 20)))
+        let well = NSColorWell(frame: NSRect(x: 160, y: y, width: 80, height: 26))
+        well.target = self
+        well.action = #selector(colorChanged)
+        view.addSubview(well)
+        return well
+    }
+
+    private func addSliderRow(_ title: String, to view: NSView, y: CGFloat, min: Double, max: Double) -> (NSSlider, NSTextField) {
+        view.addSubview(createLabel(title, frame: NSRect(x: 30, y: y, width: 120, height: 20)))
+        let slider = NSSlider(frame: NSRect(x: 160, y: y, width: 300, height: 20))
+        slider.minValue = min
+        slider.maxValue = max
+        slider.target = self
+        slider.action = #selector(sliderChanged)
+        view.addSubview(slider)
+        let valueLabel = createLabel("", frame: NSRect(x: 470, y: y, width: 60, height: 20))
+        valueLabel.alignment = .left
+        view.addSubview(valueLabel)
+        return (slider, valueLabel)
+    }
+
+    private func addHotkeyRow(_ title: String, to view: NSView, y: CGFloat) -> HotkeyRecorderView {
+        view.addSubview(createLabel(title, frame: NSRect(x: 30, y: y, width: 120, height: 20)))
+        let recorder = HotkeyRecorderView(frame: NSRect(x: 160, y: y - 4, width: 200, height: 28))
+        recorder.onChange = { [weak self] in self?.saveHotkeys() }
+        view.addSubview(recorder)
+        return recorder
     }
 
     private func createSectionLabel(_ text: String, frame: NSRect) -> NSTextField {
@@ -245,25 +301,48 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         mouseLeftClickColorWell.color = settings.mouseLeftClickColor
         mouseRightClickColorWell.color = settings.mouseRightClickColor
         mouseDiameterSlider.doubleValue = Double(settings.mouseDiameter)
-        mouseDiameterLabel.stringValue = "\(Int(settings.mouseDiameter))"
         mouseWidthSlider.doubleValue = Double(settings.mouseWidth)
-        mouseWidthLabel.stringValue = "\(Int(settings.mouseWidth))"
+
+        // Spotlight
+        spotlightDiameterSlider.doubleValue = Double(settings.spotlightDiameter)
+        spotlightDimSlider.doubleValue = Double(settings.spotlightDimOpacity * 100)
 
         // Drawing
         drawingColorWell.color = settings.drawingColor
         drawingWidthSlider.doubleValue = Double(settings.drawingWidth)
-        drawingWidthLabel.stringValue = "\(Int(settings.drawingWidth))"
 
         // Keyboard filter
         showModifiersCheckbox.state = settings.showModifierKeys ? .on : .off
         showFunctionKeysCheckbox.state = settings.showFunctionKeys ? .on : .off
         showAlphanumericCheckbox.state = settings.showAlphanumericKeys ? .on : .off
         showSpecialKeysCheckbox.state = settings.showSpecialKeys ? .on : .off
+        showModifierClicksCheckbox.state = settings.showModifierClicks ? .on : .off
+        shortcutPositionPopup.selectItem(at: settings.shortcutPosition.rawValue)
+        keySizeSlider.doubleValue = Double(settings.shortcutKeySize)
 
         // Hotkeys
         mouseHotkeyRecorder.hotkey = settings.mouseToggleHotkey
         keyboardHotkeyRecorder.hotkey = settings.keyboardToggleHotkey
         drawingHotkeyRecorder.hotkey = settings.drawingToggleHotkey
+        spotlightHotkeyRecorder.hotkey = settings.spotlightToggleHotkey
+        allHotkeyRecorder.hotkey = settings.allToggleHotkey
+
+        // Launch
+        launchMouseCheckbox.state = settings.launchWithMouse ? .on : .off
+        launchKeyboardCheckbox.state = settings.launchWithKeyboard ? .on : .off
+        launchDrawingCheckbox.state = settings.launchWithDrawing ? .on : .off
+        launchSpotlightCheckbox.state = settings.launchWithSpotlight ? .on : .off
+
+        updateSliderLabels()
+    }
+
+    private func updateSliderLabels() {
+        mouseDiameterLabel.stringValue = "\(Int(settings.mouseDiameter))"
+        mouseWidthLabel.stringValue = "\(Int(settings.mouseWidth))"
+        spotlightDiameterLabel.stringValue = "\(Int(settings.spotlightDiameter))"
+        spotlightDimLabel.stringValue = "\(Int((settings.spotlightDimOpacity * 100).rounded()))%"
+        drawingWidthLabel.stringValue = "\(Int(settings.drawingWidth))"
+        keySizeLabel.stringValue = "\(Int(settings.shortcutKeySize))"
     }
 
     @objc private func colorChanged() {
@@ -276,17 +355,13 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     @objc private func sliderChanged() {
         // Whole numbers only
-        let diameter = mouseDiameterSlider.doubleValue.rounded()
-        settings.mouseDiameter = CGFloat(diameter)
-        mouseDiameterLabel.stringValue = "\(Int(diameter))"
-
-        let mouseWidth = mouseWidthSlider.doubleValue.rounded()
-        settings.mouseWidth = CGFloat(mouseWidth)
-        mouseWidthLabel.stringValue = "\(Int(mouseWidth))"
-
-        let drawingWidth = drawingWidthSlider.doubleValue.rounded()
-        settings.drawingWidth = CGFloat(drawingWidth)
-        drawingWidthLabel.stringValue = "\(Int(drawingWidth))"
+        settings.mouseDiameter = CGFloat(mouseDiameterSlider.doubleValue.rounded())
+        settings.mouseWidth = CGFloat(mouseWidthSlider.doubleValue.rounded())
+        settings.spotlightDiameter = CGFloat(spotlightDiameterSlider.doubleValue.rounded())
+        settings.spotlightDimOpacity = CGFloat(spotlightDimSlider.doubleValue.rounded()) / 100
+        settings.drawingWidth = CGFloat(drawingWidthSlider.doubleValue.rounded())
+        settings.shortcutKeySize = CGFloat(keySizeSlider.doubleValue.rounded())
+        updateSliderLabels()
 
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }
@@ -296,6 +371,16 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         settings.showFunctionKeys = showFunctionKeysCheckbox.state == .on
         settings.showAlphanumericKeys = showAlphanumericCheckbox.state == .on
         settings.showSpecialKeys = showSpecialKeysCheckbox.state == .on
+        settings.showModifierClicks = showModifierClicksCheckbox.state == .on
+        settings.launchWithMouse = launchMouseCheckbox.state == .on
+        settings.launchWithKeyboard = launchKeyboardCheckbox.state == .on
+        settings.launchWithDrawing = launchDrawingCheckbox.state == .on
+        settings.launchWithSpotlight = launchSpotlightCheckbox.state == .on
+        NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
+    }
+
+    @objc private func shortcutPositionChanged() {
+        settings.shortcutPosition = SettingsManager.ShortcutPosition(rawValue: shortcutPositionPopup.indexOfSelectedItem) ?? .bottomLeft
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }
 
@@ -314,10 +399,16 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
+    private var hotkeyRecorders: [HotkeyRecorderView] {
+        [mouseHotkeyRecorder, keyboardHotkeyRecorder, drawingHotkeyRecorder, spotlightHotkeyRecorder, allHotkeyRecorder]
+    }
+
     private func saveHotkeys() {
         settings.mouseToggleHotkey = mouseHotkeyRecorder.hotkey
         settings.keyboardToggleHotkey = keyboardHotkeyRecorder.hotkey
         settings.drawingToggleHotkey = drawingHotkeyRecorder.hotkey
+        settings.spotlightToggleHotkey = spotlightHotkeyRecorder.hotkey
+        settings.allToggleHotkey = allHotkeyRecorder.hotkey
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }
 
@@ -326,9 +417,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        mouseHotkeyRecorder.cancelRecording()
-        keyboardHotkeyRecorder.cancelRecording()
-        drawingHotkeyRecorder.cancelRecording()
+        hotkeyRecorders.forEach { $0.cancelRecording() }
         saveHotkeys()
     }
 }

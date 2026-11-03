@@ -13,9 +13,10 @@ class ShortcutPressedViewContainer: NSView {
     private var shortcutViews: [ShortcutPressedView] = []
     private var buttonsPadding: CGFloat = 8.0
     private var shortcutViewsPadding: CGFloat = 10.0
+    private let margin: CGFloat = 20.0
 
-    private let keySize: CGFloat = 70.0  // Slightly bigger for better visibility
     private let maxDisplayTime: TimeInterval = 3.0
+    private let settings = SettingsManager.shared
 
     // MARK: - Initialization
     override init(frame frameRect: NSRect) {
@@ -46,19 +47,16 @@ class ShortcutPressedViewContainer: NSView {
         let newView = ShortcutPressedView(
             frame: .zero,
             shortcut: shortcut,
-            keySize: keySize,
+            keySize: settings.shortcutKeySize,
             keyPadding: buttonsPadding
         )
 
-        // Position on LEFT side, starting from BELOW screen (animate up from bottom)
-        let leftMargin: CGFloat = 20.0
-        let bottomMargin: CGFloat = 20.0
-        let startY: CGFloat = -newView.frame.height  // Start below screen
-        newView.frame.origin = CGPoint(x: leftMargin, y: startY)
-
-        // Calculate target position - new items at bottom, old items pushed up
-        // Target Y is always at the bottom margin for newest item
-        let targetY = bottomMargin
+        // Newest item sits nearest to the chosen screen edge and slides in from beyond it;
+        // older items are pushed away from the edge
+        let position = settings.shortcutPosition
+        let startY = position.isTop ? bounds.height : -newView.frame.height
+        newView.frame.origin = CGPoint(x: xPosition(for: newView, position: position), y: startY)
+        let targetY = yPosition(for: newView, offset: 0, position: position)
 
         newView.alphaValue = 0
 
@@ -90,14 +88,32 @@ class ShortcutPressedViewContainer: NSView {
         return total
     }
 
-    private func repositionViews(animated: Bool) {
-        let leftMargin: CGFloat = 20.0
-        let bottomMargin: CGFloat = 20.0
-        var yOffset = bottomMargin
+    // Space taken by the menu bar, so top positions don't cover it
+    private var topInset: CGFloat {
+        guard let screen = window?.screen else { return 0 }
+        return screen.frame.maxY - screen.visibleFrame.maxY
+    }
 
-        // Stack from bottom to top, with NEWEST items at bottom (reversed order)
+    private func xPosition(for view: NSView, position: SettingsManager.ShortcutPosition) -> CGFloat {
+        return position.isLeft ? margin : bounds.width - view.frame.width - margin
+    }
+
+    // offset: distance from the screen edge taken by newer items
+    private func yPosition(for view: NSView, offset: CGFloat, position: SettingsManager.ShortcutPosition) -> CGFloat {
+        if position.isTop {
+            return bounds.height - topInset - margin - offset - view.frame.height
+        }
+        return margin + offset
+    }
+
+    private func repositionViews(animated: Bool) {
+        let position = settings.shortcutPosition
+        var offset: CGFloat = 0
+
+        // Stack away from the edge, with NEWEST items nearest to it (reversed order)
         for view in shortcutViews.reversed() {
-            let newOrigin = CGPoint(x: leftMargin, y: yOffset)
+            let newOrigin = CGPoint(x: xPosition(for: view, position: position),
+                                    y: yPosition(for: view, offset: offset, position: position))
 
             if animated {
                 view.animator().frame.origin = newOrigin
@@ -105,7 +121,7 @@ class ShortcutPressedViewContainer: NSView {
                 view.frame.origin = newOrigin
             }
 
-            yOffset += view.frame.height + shortcutViewsPadding
+            offset += view.frame.height + shortcutViewsPadding
         }
     }
 

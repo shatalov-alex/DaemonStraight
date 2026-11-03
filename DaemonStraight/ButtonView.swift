@@ -56,9 +56,12 @@ class ButtonView: NSView {
 
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
+        // Corner radius and font are designed for a 70 pt key and scale with the key size setting
+        let scale = bounds.height / 70.0
+
         // Draw rounded rectangle with shadow
         let rect = bounds.insetBy(dx: 5, dy: 5)
-        let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
+        let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius * scale, yRadius: cornerRadius * scale)
 
         // Set shadow
         context.saveGState()
@@ -76,12 +79,22 @@ class ButtonView: NSView {
         path.stroke()
 
         // Draw character text - larger and bold for better readability
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 32, weight: .semibold),
+        // Single letters are uppercased; longer labels (fn, Click) keep their case
+        let text = character.count > 1 ? character : character.uppercased()
+        var fontSize = 32 * scale
+        var attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: fontSize, weight: .semibold),
             .foregroundColor: NSColor.black
         ]
 
-        let text = character.uppercased()
+        // Shrink long labels to fit the key
+        let maxTextWidth = rect.width - 12 * scale
+        let fullWidth = text.size(withAttributes: attrs).width
+        if fullWidth > maxTextWidth {
+            fontSize *= maxTextWidth / fullWidth
+            attrs[.font] = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
+        }
+
         let textSize = text.size(withAttributes: attrs)
         let textRect = NSRect(
             x: (bounds.width - textSize.width) / 2,
