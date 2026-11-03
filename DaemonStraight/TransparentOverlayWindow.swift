@@ -18,4 +18,9 @@ class TransparentOverlayWindow: NSWindow {
     override var canBecomeMain: Bool {
         return false
     }
+
+    // Keep the exact display frame (including the menu bar area) - don't let AppKit move the window
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        return frameRect
+    }
 }

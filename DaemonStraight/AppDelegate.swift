@@ -12,8 +12,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Properties
     private var statusItem: NSStatusItem!
-    private var overlayWindow: NSWindow!
-    private var overlayViewController: ViewController!
+    // One click-through overlay per display; each controller draws its own part of the screen
+    private var overlays: [(window: NSWindow, controller: ViewController)] = []
     private var settingsWindowController: SettingsWindowController?
     private let settings = SettingsManager.shared
 
@@ -33,9 +33,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setupMenuBar()
         NSLog("✅ [AppDelegate] Menu bar setup complete")
 
-        // Setup overlay window
-        setupOverlayWindow()
-        NSLog("✅ [AppDelegate] Overlay window setup complete")
+        // Setup overlay windows (one per display) and rebuild them when displays change
+        setupOverlayWindows()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(screensChanged),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+        NSLog("✅ [AppDelegate] Overlay windows setup complete")
 
         // Setup global keyboard shortcuts
         setupGlobalKeyboardShortcuts()
@@ -119,19 +125,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Mouse Highlighting toggle
         let mouseItem = NSMenuItem(title: "Mouse Highlighting", action: #selector(toggleMouseHighlight), keyEquivalent: "")
         mouseItem.target = self
-        mouseItem.state = overlayViewController?.mouseIsOn == true ? .on : .off
+        mouseItem.state = overlays.first?.controller.mouseIsOn == true ? .on : .off
         menu.addItem(mouseItem)
 
         // Keyboard Display toggle
         let keyboardItem = NSMenuItem(title: "Keyboard Display", action: #selector(toggleKeyboardDisplay), keyEquivalent: "")
         keyboardItem.target = self
-        keyboardItem.state = overlayViewController?.shortcutsCatchIsOn == true ? .on : .off
+        keyboardItem.state = overlays.first?.controller.shortcutsCatchIsOn == true ? .on : .off
         menu.addItem(keyboardItem)
 
         // Drawing Mode toggle
         let drawingItem = NSMenuItem(title: "Drawing Mode", action: #selector(toggleDrawingMode), keyEquivalent: "")
         drawingItem.target = self
-        drawingItem.state = overlayViewController?.drawingIsOn == true ? .on : .off
+        drawingItem.state = overlays.first?.controller.drawingIsOn == true ? .on : .off
         menu.addItem(drawingItem)
 
         menu.addItem(NSMenuItem.separator())
@@ -157,64 +163,77 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // MARK: - Overlay Window Setup
-    private func setupOverlayWindow() {
-        // Get all screens
-        let screens = NSScreen.screens
+    private func setupOverlayWindows() {
+        for screen in NSScreen.screens {
+            overlays.append(createOverlay(for: screen))
+        }
+        NSLog("🪟 [Window] Created \(overlays.count) overlay window(s)")
+    }
 
-        // Use main screen for simplicity, but could support multiple displays
-        guard let screen = screens.first else { return }
-
-        // Create fullscreen window covering entire screen including menu bar
+    private func createOverlay(for screen: NSScreen) -> (window: NSWindow, controller: ViewController) {
+        // Fullscreen window covering the entire display including the menu bar
         let frame = screen.frame
 
         // Create custom overlay window that never becomes key
-        overlayWindow = TransparentOverlayWindow(
+        let window = TransparentOverlayWindow(
             contentRect: frame,
             styleMask: [.borderless],
             backing: .buffered,
             defer: false,
             screen: screen
         )
+        // The init above treats contentRect as relative to the screen - set the global frame explicitly
+        window.setFrame(frame, display: false)
+        window.isReleasedWhenClosed = false
 
-        overlayWindow.backgroundColor = .clear
-        overlayWindow.isOpaque = false
-        overlayWindow.hasShadow = false
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = false
 
         // Use the highest possible window level for overlays
-        overlayWindow.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
+        window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
 
-        overlayWindow.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-        overlayWindow.ignoresMouseEvents = true  // Start with pass-through enabled
-        overlayWindow.acceptsMouseMovedEvents = true
-        overlayWindow.alphaValue = 1.0  // Keep fully visible
-
-        NSLog("🪟 [Window] Created overlay window at level: \(overlayWindow.level.rawValue)")
-        NSLog("🪟 [Window] Frame: \(NSStringFromRect(frame))")
-        NSLog("🪟 [Window] Screen frame: \(NSStringFromRect(screen.frame))")
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        window.ignoresMouseEvents = true  // Always click-through
+        window.acceptsMouseMovedEvents = true
+        window.alphaValue = 1.0  // Keep fully visible
 
         // Create view controller with screen size
-        overlayViewController = ViewController(screenSize: frame.size)
-        overlayWindow.contentViewController = overlayViewController
-
-        NSLog("🪟 [Window] ViewController view frame: \(NSStringFromRect(overlayViewController.view.frame))")
-        NSLog("🪟 [Window] ViewController view bounds: \(NSStringFromRect(overlayViewController.view.bounds))")
+        let controller = ViewController(screenSize: frame.size)
+        window.contentViewController = controller
 
         // Ensure autoresizing works
-        overlayViewController.view.autoresizingMask = [.width, .height]
-
-        // CRITICAL: Ensure contentView covers entire window
-        if let contentView = overlayWindow.contentView {
-            contentView.autoresizingMask = [.width, .height]
-            NSLog("🪟 [Window] ContentView frame: \(NSStringFromRect(contentView.frame))")
-            NSLog("🪟 [Window] ContentView bounds: \(NSStringFromRect(contentView.bounds))")
-        }
+        controller.view.autoresizingMask = [.width, .height]
+        window.contentView?.autoresizingMask = [.width, .height]
 
         // Show window - use orderFrontRegardless to keep it visible
-        overlayWindow.orderFrontRegardless()
+        window.orderFrontRegardless()
 
-        NSLog("🪟 [Window] Window ordered front (never becomes key)")
-        NSLog("🪟 [Window] Window is visible: \(overlayWindow.isVisible)")
-        NSLog("🪟 [Window] Window alpha: \(overlayWindow.alphaValue)")
+        NSLog("🪟 [Window] Overlay for display \(NSStringFromRect(frame)) at level \(window.level.rawValue)")
+        return (window, controller)
+    }
+
+    @objc private func screensChanged() {
+        // Displays were connected, disconnected or rearranged: rebuild the overlays, keeping the modes
+        let current = overlays.first?.controller
+        let mouseOn = current?.mouseIsOn ?? false
+        let keyboardOn = current?.shortcutsCatchIsOn ?? false
+        let drawingOn = current?.drawingIsOn ?? false
+
+        for overlay in overlays {
+            overlay.window.orderOut(nil)
+            overlay.window.contentViewController = nil
+            overlay.window.close()
+        }
+        overlays.removeAll()
+        setupOverlayWindows()
+
+        for overlay in overlays {
+            if mouseOn { overlay.controller.toggleMouseHighlight() }
+            if keyboardOn { overlay.controller.toggleShortcutCatcher() }
+            if drawingOn { overlay.controller.toggleDrawingMode() }
+        }
+        updateMenuItemStates()
     }
 
     // MARK: - Global Keyboard Shortcuts
@@ -259,24 +278,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Menu Actions
     @objc private func toggleMouseHighlight() {
-        overlayViewController?.toggleMouseHighlight()
+        overlays.forEach { $0.controller.toggleMouseHighlight() }
         updateMenuItemStates()
         updateWindowMouseEventHandling()
     }
 
     @objc private func toggleKeyboardDisplay() {
-        overlayViewController?.toggleShortcutCatcher()
+        overlays.forEach { $0.controller.toggleShortcutCatcher() }
         updateMenuItemStates()
     }
 
     @objc private func toggleDrawingMode() {
-        overlayViewController?.toggleDrawingMode()
+        overlays.forEach { $0.controller.toggleDrawingMode() }
         updateMenuItemStates()
         updateWindowMouseEventHandling()
     }
 
     @objc private func clearDrawing() {
-        overlayViewController?.clearDrawing()
+        overlays.forEach { $0.controller.clearDrawing() }
     }
 
     @objc private func openSettings() {
@@ -299,24 +318,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Update checkmarks
         if let mouseItem = menu.item(withTitle: "Mouse Highlighting") {
-            mouseItem.state = overlayViewController?.mouseIsOn == true ? .on : .off
+            mouseItem.state = overlays.first?.controller.mouseIsOn == true ? .on : .off
         }
 
         if let keyboardItem = menu.item(withTitle: "Keyboard Display") {
-            keyboardItem.state = overlayViewController?.shortcutsCatchIsOn == true ? .on : .off
+            keyboardItem.state = overlays.first?.controller.shortcutsCatchIsOn == true ? .on : .off
         }
 
         if let drawingItem = menu.item(withTitle: "Drawing Mode") {
-            drawingItem.state = overlayViewController?.drawingIsOn == true ? .on : .off
+            drawingItem.state = overlays.first?.controller.drawingIsOn == true ? .on : .off
         }
     }
 
     private func updateWindowMouseEventHandling() {
         // ALWAYS keep window transparent to mouse events
         // Drawing uses global event monitors, not window event capture
-        overlayWindow.ignoresMouseEvents = true
+        overlays.forEach { $0.window.ignoresMouseEvents = true }
 
-        // Ensure window stays visible and at correct level
+        // Ensure windows stay visible and at correct level
         maintainWindowVisibility()
     }
 
@@ -333,8 +352,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func maintainWindowVisibility() {
-        guard let window = overlayWindow else { return }
+        for window in overlays.map({ $0.window }) {
+            maintainVisibility(of: window)
+        }
+    }
 
+    private func maintainVisibility(of window: NSWindow) {
         // Ensure window stays at maximum level
         window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
 
@@ -361,10 +384,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         // Update menu item states to reflect current state
         updateMenuItemStates()
-        overlayViewController?.pauseMouseTracking()
+        overlays.forEach { $0.controller.pauseMouseTracking() }
     }
 
     func menuDidClose(_ menu: NSMenu) {
-        overlayViewController?.resumeMouseTracking()
+        overlays.forEach { $0.controller.resumeMouseTracking() }
     }
 }
