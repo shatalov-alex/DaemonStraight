@@ -27,6 +27,8 @@
 - **On-screen drawing.** Hold `⇧` and move the mouse to draw freehand, or hold `⌃⇧` for straight lines. Drawings fade
   out automatically shortly after you release the keys.
 - **Click-through overlay.** The overlay never takes focus or intercepts clicks, so you keep working normally.
+- **Multiple displays.** Works on every connected display, and adapts when displays are connected, disconnected
+  or rearranged. Shortcuts are shown on all displays, so they're visible whichever screen you share.
 - **Menu bar only.** No Dock icon and no windows in the way. Everything is controlled from the menu bar or with global hotkeys.
 - **Customizable.** Colors, sizes, which keys to display, and the toggle hotkeys can all be changed in Settings.
 
@@ -123,7 +125,7 @@ DaemonStraight/
 ├── main.swift                       App entry point (menu bar app, no Dock icon)
 ├── AppDelegate.swift                Status bar menu, global hotkeys, overlay window
 ├── ViewController.swift             Event monitoring, shortcut filtering, drawing control
-├── TransparentOverlayWindow.swift   Full-screen, click-through overlay window
+├── TransparentOverlayWindow.swift   Full-screen, click-through overlay window (one per display)
 ├── CircleView.swift                 Cursor highlight rings and click animation
 ├── DrawView.swift                   Drawing canvas with fade-out
 ├── ShortcutPressedViewContainer.swift, ShortcutPressedView.swift,
@@ -135,10 +137,6 @@ scripts/
 ├── build_release.sh                 Universal (Apple silicon + Intel) release build
 └── generate_icons.py                Generates the app and menu bar icons (requires Pillow)
 ```
-
-## Known limitations
-
-- The overlay currently covers the main display only.
 
 ## Contributing
 
