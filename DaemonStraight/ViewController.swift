@@ -14,12 +14,14 @@ class ViewController: NSViewController {
     private var drawView: DrawView?
     private var shortcutsView: ShortcutPressedViewContainer?
     private var mouseCircleView: CircleView?
+    private var spotlightView: SpotlightView?
     private let settings = SettingsManager.shared
 
     // State flags
     var drawingIsOn: Bool = false
     var mouseIsOn: Bool = false  // Start with mouse highlighting OFF
     var shortcutsCatchIsOn: Bool = false  // Start with keyboard display OFF
+    var spotlightIsOn: Bool = false
 
     // Modes
     var mouseHighlightMode: Bool = false  // Start with mouse highlighting OFF
@@ -120,6 +122,13 @@ class ViewController: NSViewController {
         drawView = drawingView
         NSLog("  ✅ Drawing view added")
 
+        // Setup spotlight (dims everything except the area around the cursor; keycaps and ring stay bright)
+        let spotlight = SpotlightView(frame: view.bounds)
+        spotlight.autoresizingMask = [.width, .height]
+        spotlight.isHidden = true
+        view.addSubview(spotlight)
+        spotlightView = spotlight
+
         // Setup shortcuts display container
         let shortcutsContainer = ShortcutPressedViewContainer(frame: view.bounds)
         shortcutsContainer.autoresizingMask = [.width, .height]
@@ -185,6 +194,10 @@ class ViewController: NSViewController {
         // Update mouse highlighting if enabled
         if mouseIsOn {
             updateMouseHighlight(at: location)
+        }
+
+        if spotlightIsOn {
+            updateSpotlight(at: location)
         }
 
         // Update drawing if shift is pressed and drawing mode is enabled
@@ -319,9 +332,6 @@ class ViewController: NSViewController {
         let hasOption = modifiers.contains(.option)
         let hasControl = modifiers.contains(.control)
         let hasShift = modifiers.contains(.shift)
-        let hasFunction = modifiers.contains(.function)  // fn key
-
-        let hasMeaningfulModifier = hasCommand || hasOption || hasControl || hasFunction
 
         // Determine key type for filtering
         let fKeys = [
@@ -336,12 +346,19 @@ class ViewController: NSViewController {
                             key.lowercased().hasPrefix("f") &&
                             key.dropFirst().allSatisfy { $0.isNumber })
 
-        let specialChars = [
-            "\u{1B}", "\t", "\r", "\u{7F}", "\u{F728}",
-            "\u{F700}", "\u{F701}", "\u{F702}", "\u{F703}"
+        // Arrows and navigation keys (forward delete, home, end, page up/down)
+        let navigationChars = [
+            "\u{F700}", "\u{F701}", "\u{F702}", "\u{F703}",
+            "\u{F728}", "\u{F729}", "\u{F72B}", "\u{F72C}", "\u{F72D}"
         ]
+        let specialChars = ["\u{1B}", "\t", "\r", "\u{7F}"] + navigationChars
         let specialKeyNames = ["escape", "esc", "tab", "return", "enter", "delete", "fn"]
         let isSpecialKey = specialChars.contains(key) || specialKeyNames.contains(key.lowercased())
+
+        // macOS sets the fn flag on F-keys, arrows and navigation keys by itself - only show fn when it was really held
+        let hasFunction = modifiers.contains(.function) && !isFunctionKey && !navigationChars.contains(key)
+
+        let hasMeaningfulModifier = hasCommand || hasOption || hasControl || hasFunction
 
         // Always skip space bar
         if key == " " {
@@ -517,10 +534,12 @@ class ViewController: NSViewController {
         case .leftMouseDown:
             // Start continuous shrink animation with left click color
             mouseCircleView?.startShrinking(color: settings.mouseLeftClickColor)
+            showModifierClick("click", modifiers: event.modifierFlags)
 
         case .rightMouseDown:
             // Start continuous shrink animation with right click color
             mouseCircleView?.startShrinking(color: settings.mouseRightClickColor)
+            showModifierClick("right click", modifiers: event.modifierFlags)
 
         case .leftMouseUp, .rightMouseUp:
             // Stop shrinking and expand back when button released
@@ -528,6 +547,38 @@ class ViewController: NSViewController {
 
         default:
             break
+        }
+    }
+
+    // Show clicks made with modifiers (⌘ Click, ⌥ Right Click...) next to the shortcuts
+    private func showModifierClick(_ click: String, modifiers: NSEvent.ModifierFlags) {
+        guard shortcutsCatchIsOn && settings.showModifierClicks else { return }
+
+        var keys: [String] = []
+        if modifiers.contains(.control) { keys.append("control") }
+        if modifiers.contains(.option) { keys.append("option") }
+        if modifiers.contains(.command) { keys.append("command") }
+        if modifiers.contains(.shift) { keys.append("shift") }
+
+        // Plain clicks are never shown
+        guard !keys.isEmpty else { return }
+
+        keys.append(click)
+        shortcutsView?.addViewSubview(keys)
+    }
+
+    // MARK: - Spotlight
+    private func updateSpotlight(at location: CGPoint) {
+        guard let spotlight = spotlightView else { return }
+
+        // Only the display with the cursor is dimmed
+        let point = convertScreenToView(location)
+        let isOnThisDisplay = view.bounds.contains(point)
+        if spotlight.isHidden == isOnThisDisplay {
+            spotlight.isHidden = !isOnThisDisplay
+        }
+        if isOnThisDisplay {
+            spotlight.move(to: point)
         }
     }
 
@@ -594,6 +645,16 @@ class ViewController: NSViewController {
 
         if !shortcutsCatchIsOn {
             shortcutsView?.clearAll()
+        }
+    }
+
+    func toggleSpotlight() {
+        spotlightIsOn.toggle()
+
+        if spotlightIsOn {
+            updateSpotlight(at: NSEvent.mouseLocation)
+        } else {
+            spotlightView?.isHidden = true
         }
     }
 

@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		87BCE4F12EEB0A0000BEB4AB /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Signing.xcconfig; path = Config/Signing.xcconfig; sourceTree = "<group>"; };
 		87BCE4CD2EEAFB4100BEB4AB /* DaemonStraight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DaemonStraight.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		87BCE4F12EEB0A0000BEB4AB /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Signing.xcconfig; path = Config/Signing.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */

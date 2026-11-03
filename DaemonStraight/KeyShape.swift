@@ -14,6 +14,7 @@ enum KeyShape {
     case extraWide   // Enter, Shift
     case spacebar    // Space - very wide
     case modifier    // Cmd, Option, Ctrl, Fn - medium wide
+    case mouse       // Click, Right Click
 
     // Get the width multiplier for this key shape (relative to standard key)
     var widthMultiplier: CGFloat {
@@ -28,6 +29,8 @@ enum KeyShape {
             return 5.0
         case .modifier:
             return 1.3
+        case .mouse:
+            return 2.4
         }
     }
 
@@ -38,6 +41,11 @@ enum KeyShape {
         // Spacebar
         if lowercased == "space" || key == "␣" {
             return .spacebar
+        }
+
+        // Mouse clicks
+        if lowercased == "click" || lowercased == "right click" {
+            return .mouse
         }
 
         // Modifiers
