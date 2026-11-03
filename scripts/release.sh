@@ -113,8 +113,17 @@ $(cat "$DIST/SHA256SUMS.txt")
 \`\`\`
 EOF
 
-gh release create "$TAG" -R "$REPO" --title "DaemonStraight $VERSION" --notes-file "$NOTES" --verify-tag --latest \
-    "$DIST/DaemonStraight-$VERSION.dmg" "$DIST/DaemonStraight-$VERSION.zip" "$DIST/SHA256SUMS.txt"
+# The tag is already pushed at this point; retry if GitHub has a temporary error
+for attempt in 1 2 3; do
+    if gh release create "$TAG" -R "$REPO" --title "DaemonStraight $VERSION" --notes-file "$NOTES" --verify-tag --latest \
+        "$DIST/DaemonStraight-$VERSION.dmg" "$DIST/DaemonStraight-$VERSION.zip" "$DIST/SHA256SUMS.txt"; then
+        break
+    fi
+    [ "$attempt" -lt 3 ] || fail "Creating the GitHub release failed. Notes are in $NOTES - rerun the gh release create step"
+    echo "⚠️  Creating the GitHub release failed, retrying in 10 s..."
+    gh release delete "$TAG" -R "$REPO" --yes >/dev/null 2>&1 || true  # remove a partly created release, keep the tag
+    sleep 10
+done
 rm -f "$NOTES"
 
 echo ""
