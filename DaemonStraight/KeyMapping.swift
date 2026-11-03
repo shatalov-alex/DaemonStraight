@@ -79,6 +79,10 @@ struct KeyMapping {
 
         // Function/fn key
         "fn": "fn",
+
+        // Mouse clicks (shown with modifiers, e.g. ⌘ Click)
+        "click": "Click",
+        "right click": "Right Click",
         "\u{F747}": "fn",
 
         // F-keys (string names)

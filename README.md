@@ -23,18 +23,24 @@
 
 - **Cursor highlighting.** A soft, glowing double ring follows the pointer. Pressing a mouse button shrinks the ring
   and changes its color (separate colors for left and right clicks), so viewers can see every click.
-- **Shortcut display.** Key combinations such as `⌘⇧4` or `⌃⌥→` appear as keycaps in the corner of the screen and fade
-  out after a few seconds. Keys are detected by physical position, so they are shown correctly with any keyboard layout.
+- **Shortcut display.** Key combinations such as `⌘⇧4` or `⌃⌥→` appear as keycaps in a corner of the screen and fade
+  out after a few seconds, as do clicks made with modifiers, such as `⌘ Click`. Keys are detected by physical position,
+  so they are shown correctly with any keyboard layout.
+- **Spotlight.** Dims the screen except a soft circle around the pointer, so the audience looks exactly where you point.
 - **On-screen drawing.** Hold `⇧` and move the mouse to draw freehand, or hold `⌃⇧` for straight lines. Drawings fade
   out automatically shortly after you release the keys.
 - **Click-through overlay.** The overlay never takes focus or intercepts clicks, so you keep working normally.
 - **Multiple displays.** Works on every connected display, and adapts when displays are connected, disconnected
   or rearranged. Shortcuts are shown on all displays, so they're visible whichever screen you share.
 - **Menu bar only.** No Dock icon and no windows in the way. Everything is controlled from the menu bar or with global hotkeys.
-- **Customizable.** Colors, sizes, which keys to display, and the toggle hotkeys can all be changed in Settings.
+- **Customizable.** Colors, sizes, which keys to display, where to show them, the toggle hotkeys and the features that turn
+  on at launch can all be changed in Settings.
 
 <p align="center">
-  <img src="docs/images/settings-light.png" width="480" alt="Settings window">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-dark.png">
+    <img src="docs/images/settings-light.png" width="480" alt="Settings window">
+  </picture>
 </p>
 
 ## Requirements
@@ -87,13 +93,25 @@ On first launch, macOS asks you to allow DaemonStraight to control your computer
 
 ## Usage
 
-All features are off when the app starts. Toggle them from the menu bar icon or with the default hotkeys:
+Toggle features from the menu bar icon or with the default hotkeys:
 
 | Feature             | Hotkey  |
 | ------------------- | ------- |
 | Cursor highlighting | `⌃⌥⌘M`  |
 | Shortcut display    | `⌃⌥⌘K`  |
 | Drawing mode        | `⌃⌥⌘D`  |
+| Spotlight           | `⌃⌥⌘S`  |
+| All features on/off | `⌃⌥⌘A`  |
+
+By default all features are off when the app starts. Choose the ones that turn on at launch in
+**Settings → General → At Launch**.
+
+### Tip: start and stop with your presentation
+
+DaemonStraight is only needed while you present, so it works well with the **Shortcuts** app. Create one shortcut that
+opens DaemonStraight (with the features you need turned on at launch), joins your next meeting and turns on a Focus mode,
+and another one that quits DaemonStraight and turns the Focus mode off. Add both to the menu bar or the Dock, and the
+whole setup is one click before and after the call.
 
 ### Drawing
 
@@ -113,11 +131,11 @@ Drawings fade out three seconds after you release `⇧`.
 
 Open **Settings…** from the menu bar icon (or press `⌘,` while the menu is open) to change:
 
-- ring colors (idle, left click, right click), diameter and ring width
-- drawing color and line width
-- which keys the shortcut display shows: modifiers, function keys, special keys (Esc, Tab, Return, Delete, arrows)
-  and, optionally, plain typing
-- the three toggle hotkeys (each must include at least one of `⌃`, `⌥` or `⌘`)
+- **Mouse:** ring colors (idle, left click, right click), diameter and ring width; spotlight diameter and dimming
+- **Keyboard:** which keys the shortcut display shows (modifiers, function keys, special keys, clicks with modifiers
+  and, optionally, plain typing), the screen corner and the key size
+- **Drawing:** line color and width
+- **General:** the toggle hotkeys (each must include at least one of `⌃`, `⌥` or `⌘`) and the features that turn on at launch
 
 Changes apply immediately and are saved automatically.
 
@@ -138,6 +156,7 @@ DaemonStraight/
 ├── ViewController.swift             Event monitoring, shortcut filtering, drawing control
 ├── TransparentOverlayWindow.swift   Full-screen, click-through overlay window (one per display)
 ├── CircleView.swift                 Cursor highlight rings and click animation
+├── SpotlightView.swift              Dimmed screen with a circle around the cursor
 ├── DrawView.swift                   Drawing canvas with fade-out
 ├── ShortcutPressedViewContainer.swift, ShortcutPressedView.swift,
 │   ButtonView.swift, BlurredView.swift, KeyShape.swift, KeyMapping.swift
@@ -146,8 +165,14 @@ DaemonStraight/
 └── SettingsWindowController.swift   Settings window and hotkey recorder
 scripts/
 ├── build_release.sh                 Universal (Apple silicon + Intel) release build
+├── release.sh                       Versions, tags, packages and publishes a release
 └── generate_icons.py                Generates the app and menu bar icons (requires Pillow)
 ```
+
+## Versioning
+
+DaemonStraight follows [Semantic Versioning](https://semver.org): releases are tagged `vMAJOR.MINOR.PATCH`, and every
+change is listed in the [changelog](CHANGELOG.md). Maintainers publish a release with `./scripts/release.sh X.Y.Z`.
 
 ## Contributing
 

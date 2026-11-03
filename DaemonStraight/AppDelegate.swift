@@ -12,6 +12,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Properties
     private var statusItem: NSStatusItem!
+    private var mouseItem: NSMenuItem!
+    private var keyboardItem: NSMenuItem!
+    private var drawingItem: NSMenuItem!
+    private var spotlightItem: NSMenuItem!
+    private var allFeaturesItem: NSMenuItem!
     // One click-through overlay per display; each controller draws its own part of the screen
     private var overlays: [(window: NSWindow, controller: ViewController)] = []
     private var settingsWindowController: SettingsWindowController?
@@ -43,6 +48,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         NSLog("✅ [AppDelegate] Overlay windows setup complete")
 
+        // Turn on the features selected in Settings › General (all off by default)
+        setFeatures(mouse: settings.launchWithMouse,
+                    keyboard: settings.launchWithKeyboard,
+                    drawing: settings.launchWithDrawing,
+                    spotlight: settings.launchWithSpotlight)
+
         // Setup global keyboard shortcuts
         setupGlobalKeyboardShortcuts()
         NSLog("✅ [AppDelegate] Global keyboard shortcuts setup complete")
@@ -50,11 +61,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Setup window maintenance timer
         setupWindowMaintenance()
 
-        NSLog("🎉 [AppDelegate] Application ready! All features are OFF by default.")
-        NSLog("⌨️  [AppDelegate] Keyboard shortcuts:")
-        NSLog("    ⌃⌥⌘M - Toggle mouse highlighting")
-        NSLog("    ⌃⌥⌘K - Toggle keyboard display")
-        NSLog("    ⌃⌥⌘D - Toggle drawing mode")
+        NSLog("🎉 [AppDelegate] Application ready!")
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -122,23 +129,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // Mouse Highlighting toggle
-        let mouseItem = NSMenuItem(title: "Mouse Highlighting", action: #selector(toggleMouseHighlight), keyEquivalent: "")
+        // Feature toggles (states are updated in updateMenuItemStates)
+        mouseItem = NSMenuItem(title: "Mouse Highlighting", action: #selector(toggleMouseHighlight), keyEquivalent: "")
         mouseItem.target = self
-        mouseItem.state = overlays.first?.controller.mouseIsOn == true ? .on : .off
         menu.addItem(mouseItem)
 
-        // Keyboard Display toggle
-        let keyboardItem = NSMenuItem(title: "Keyboard Display", action: #selector(toggleKeyboardDisplay), keyEquivalent: "")
+        keyboardItem = NSMenuItem(title: "Keyboard Display", action: #selector(toggleKeyboardDisplay), keyEquivalent: "")
         keyboardItem.target = self
-        keyboardItem.state = overlays.first?.controller.shortcutsCatchIsOn == true ? .on : .off
         menu.addItem(keyboardItem)
 
-        // Drawing Mode toggle
-        let drawingItem = NSMenuItem(title: "Drawing Mode", action: #selector(toggleDrawingMode), keyEquivalent: "")
+        drawingItem = NSMenuItem(title: "Drawing Mode", action: #selector(toggleDrawingMode), keyEquivalent: "")
         drawingItem.target = self
-        drawingItem.state = overlays.first?.controller.drawingIsOn == true ? .on : .off
         menu.addItem(drawingItem)
+
+        spotlightItem = NSMenuItem(title: "Spotlight", action: #selector(toggleSpotlight), keyEquivalent: "")
+        spotlightItem.target = self
+        menu.addItem(spotlightItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        allFeaturesItem = NSMenuItem(title: "Turn All On", action: #selector(toggleAllFeatures), keyEquivalent: "")
+        allFeaturesItem.target = self
+        menu.addItem(allFeaturesItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -219,6 +231,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let mouseOn = current?.mouseIsOn ?? false
         let keyboardOn = current?.shortcutsCatchIsOn ?? false
         let drawingOn = current?.drawingIsOn ?? false
+        let spotlightOn = current?.spotlightIsOn ?? false
 
         for overlay in overlays {
             overlay.window.orderOut(nil)
@@ -228,12 +241,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         overlays.removeAll()
         setupOverlayWindows()
 
-        for overlay in overlays {
-            if mouseOn { overlay.controller.toggleMouseHighlight() }
-            if keyboardOn { overlay.controller.toggleShortcutCatcher() }
-            if drawingOn { overlay.controller.toggleDrawingMode() }
-        }
-        updateMenuItemStates()
+        setFeatures(mouse: mouseOn, keyboard: keyboardOn, drawing: drawingOn, spotlight: spotlightOn)
     }
 
     // MARK: - Global Keyboard Shortcuts
@@ -266,6 +274,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let mouseHotkey = settings.mouseToggleHotkey
         let keyboardHotkey = settings.keyboardToggleHotkey
         let drawingHotkey = settings.drawingToggleHotkey
+        let spotlightHotkey = settings.spotlightToggleHotkey
+        let allHotkey = settings.allToggleHotkey
 
         if keyCode == mouseHotkey.keyCode && modifiers.rawValue == mouseHotkey.modifiers {
             toggleMouseHighlight()
@@ -273,6 +283,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             toggleKeyboardDisplay()
         } else if keyCode == drawingHotkey.keyCode && modifiers.rawValue == drawingHotkey.modifiers {
             toggleDrawingMode()
+        } else if keyCode == spotlightHotkey.keyCode && modifiers.rawValue == spotlightHotkey.modifiers {
+            toggleSpotlight()
+        } else if keyCode == allHotkey.keyCode && modifiers.rawValue == allHotkey.modifiers {
+            toggleAllFeatures()
         }
     }
 
@@ -290,6 +304,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleDrawingMode() {
         overlays.forEach { $0.controller.toggleDrawingMode() }
+        updateMenuItemStates()
+        updateWindowMouseEventHandling()
+    }
+
+    @objc private func toggleSpotlight() {
+        overlays.forEach { $0.controller.toggleSpotlight() }
+        updateMenuItemStates()
+    }
+
+    // Turns everything off if anything is on, otherwise turns everything on
+    @objc private func toggleAllFeatures() {
+        let turnOn = !anyFeatureIsOn
+        setFeatures(mouse: turnOn, keyboard: turnOn, drawing: turnOn, spotlight: turnOn)
+    }
+
+    private var anyFeatureIsOn: Bool {
+        guard let controller = overlays.first?.controller else { return false }
+        return controller.mouseIsOn || controller.shortcutsCatchIsOn || controller.drawingIsOn || controller.spotlightIsOn
+    }
+
+    private func setFeatures(mouse: Bool, keyboard: Bool, drawing: Bool, spotlight: Bool) {
+        for controller in overlays.map({ $0.controller }) {
+            if controller.mouseIsOn != mouse { controller.toggleMouseHighlight() }
+            if controller.shortcutsCatchIsOn != keyboard { controller.toggleShortcutCatcher() }
+            if controller.drawingIsOn != drawing { controller.toggleDrawingMode() }
+            if controller.spotlightIsOn != spotlight { controller.toggleSpotlight() }
+        }
         updateMenuItemStates()
         updateWindowMouseEventHandling()
     }
@@ -314,20 +355,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Helper Methods
     private func updateMenuItemStates() {
-        guard let menu = statusItem.menu else { return }
+        let controller = overlays.first?.controller
 
         // Update checkmarks
-        if let mouseItem = menu.item(withTitle: "Mouse Highlighting") {
-            mouseItem.state = overlays.first?.controller.mouseIsOn == true ? .on : .off
-        }
-
-        if let keyboardItem = menu.item(withTitle: "Keyboard Display") {
-            keyboardItem.state = overlays.first?.controller.shortcutsCatchIsOn == true ? .on : .off
-        }
-
-        if let drawingItem = menu.item(withTitle: "Drawing Mode") {
-            drawingItem.state = overlays.first?.controller.drawingIsOn == true ? .on : .off
-        }
+        mouseItem?.state = controller?.mouseIsOn == true ? .on : .off
+        keyboardItem?.state = controller?.shortcutsCatchIsOn == true ? .on : .off
+        drawingItem?.state = controller?.drawingIsOn == true ? .on : .off
+        spotlightItem?.state = controller?.spotlightIsOn == true ? .on : .off
+        allFeaturesItem?.title = anyFeatureIsOn ? "Turn All Off" : "Turn All On"
     }
 
     private func updateWindowMouseEventHandling() {
