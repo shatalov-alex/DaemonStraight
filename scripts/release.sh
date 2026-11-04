@@ -20,6 +20,9 @@ TAG="v$VERSION"
 REPO="shatalov-alex/DaemonStraight"
 DIST="build/dist"
 
+# SHA-1 of the release certificate. A different one would make users grant Accessibility again
+CERT_SHA1="F691FCCD86582AA17B5EC5A6CF598B8A857E531E"
+
 fail() { echo "❌ $1"; exit 1; }
 
 # Authenticate git over HTTPS with the GitHub CLI login
@@ -28,6 +31,7 @@ git_push() { git -c credential.helper= -c credential.helper='!gh auth git-creden
 # MARK: - Checks
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Usage: $0 X.Y.Z (semantic version, e.g. 1.2.0)"
 command -v gh >/dev/null || fail "GitHub CLI (gh) is required"
+security find-identity -p codesigning | grep -q "$CERT_SHA1" || fail "The release certificate $CERT_SHA1 is not in the keychain"
 [ "$(git branch --show-current)" = "main" ] || fail "Releases are made from main"
 [ -z "$(git status --porcelain)" ] || fail "Working tree has uncommitted changes"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fail "Tag $TAG already exists"
@@ -81,6 +85,7 @@ echo "🏷️  Releasing $VERSION (build $BUILD_NUMBER)"
 APP_PATH="build/Release/DaemonStraight.app"
 built_version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist")
 [ "$built_version" = "$VERSION" ] || fail "Built app has version $built_version, expected $VERSION"
+codesign -d -r- "$APP_PATH" 2>&1 | grep -qi "$CERT_SHA1" || fail "Built app isn't signed with the release certificate"
 
 rm -rf "$DIST" && mkdir -p "$DIST/dmg"
 ditto "$APP_PATH" "$DIST/dmg/DaemonStraight.app"

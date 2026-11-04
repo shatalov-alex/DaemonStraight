@@ -35,11 +35,19 @@ BUILD_DIR="build/Release"
 APP_PATH="$BUILD_DIR/DaemonStraight.app"
 
 if [ -d "$APP_PATH" ]; then
+    # Sign with the release certificate, so the Accessibility permission survives updates.
+    # Without it (see create_signing_certificate.sh) the signature is ad-hoc
+    SIGN_IDENTITY="DaemonStraight Self-Signed"
+    if ! security find-identity -p codesigning | grep -q "\"$SIGN_IDENTITY\""; then
+        echo "⚠️  \"$SIGN_IDENTITY\" not found, signing ad-hoc"
+        SIGN_IDENTITY="-"
+    fi
+
     # Re-sign without the debugger (get-task-allow) entitlement, keeping the App Sandbox ones
     ENTITLEMENTS="$(mktemp)"
     codesign -d --entitlements - --xml "$APP_PATH" > "$ENTITLEMENTS" 2>/dev/null
     /usr/libexec/PlistBuddy -c "Delete :com.apple.security.get-task-allow" "$ENTITLEMENTS" 2>/dev/null || true
-    codesign --force --sign - --entitlements "$ENTITLEMENTS" "$APP_PATH"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none --entitlements "$ENTITLEMENTS" "$APP_PATH"
     rm -f "$ENTITLEMENTS"
 
     echo ""

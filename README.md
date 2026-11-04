@@ -89,7 +89,8 @@ On first launch, macOS asks you to allow DaemonStraight to control your computer
 
 > [!NOTE]
 > macOS ties this permission to the app's code signature. If you rebuild the app with a different (or ad-hoc)
-> signature, remove the old entry from the list and grant access again.
+> signature, remove the old entry from the list and grant access again. Releases after 1.1.0 share one
+> certificate, so updating from one of them to a newer one keeps the permission.
 
 ## Usage
 
@@ -146,6 +147,17 @@ DaemonStraight observes keyboard and mouse events only to draw the overlay in re
 - Pressed keys are **never written to logs or disk** and are kept in memory only while they are on screen.
 - The app makes **no network connections**.
 - Settings are stored locally in the app's preferences (`UserDefaults`).
+
+### Verifying a download
+
+Releases are signed with a self-signed certificate: [`Config/release-certificate.pem`](Config/release-certificate.pem).
+It doesn't replace Apple's notarization, but you can check that an app comes from this project:
+
+```bash
+codesign -d -r- /Applications/DaemonStraight.app
+```
+
+The output must contain `f691fccd86582aa17b5ec5a6cf598b8a857e531e`, the certificate's SHA-1 fingerprint.
 
 ## Project structure
 
