@@ -9,6 +9,10 @@ xcuserdata/
 # Local signing settings (developer team ID)
 Config/Local.xcconfig
 
+# Signing keys must never be committed
+*.p12
+*.key
+
 # Build output
 build/
 DerivedData/

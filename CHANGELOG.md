@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Releases are signed with a permanent self-signed certificate, so future updates keep the Accessibility permission.
+  It has to be granted once more when updating to this version.
+
 ## [1.1.0] - 2026-11-04
 
 ### Added
