@@ -187,6 +187,7 @@ DaemonStraight/
 scripts/
 ├── build_release.sh                 Universal (Apple silicon + Intel) release build
 ├── release.sh                       Versions, tags, packages and publishes a release
+├── verify_release.sh                Self-check of the app and packages before publishing
 ├── create_signing_certificate.sh    Creates the release certificate (run once)
 └── generate_icons.py                Generates the app and menu bar icons (requires Pillow)
 ```
