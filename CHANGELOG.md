@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- App startup no longer relies on code that the Swift 6 language mode would reject. Nothing changes in how the app works.
+
 ## [1.2.0] - 2026-11-05
 
 ### Added
