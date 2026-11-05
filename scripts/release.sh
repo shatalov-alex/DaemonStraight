@@ -2,7 +2,7 @@
 
 # DaemonStraight Release Script
 # Publishes a new version: sets the version, updates CHANGELOG.md, commits, tags vX.Y.Z,
-# builds the universal app, packages DMG + ZIP and creates the GitHub release.
+# builds the universal app, packages DMG + ZIP + the Sparkle update feed and creates the GitHub release.
 #
 # Usage: ./scripts/release.sh X.Y.Z
 #
@@ -95,6 +95,29 @@ ditto -c -k --keepParent "$APP_PATH" "$DIST/DaemonStraight-$VERSION.zip"
 rm -rf "$DIST/dmg"
 (cd "$DIST" && shasum -a 256 "DaemonStraight-$VERSION.dmg" "DaemonStraight-$VERSION.zip" > SHA256SUMS.txt)
 
+# The app reads this feed from the latest release. Sparkle checks the update's signature against the key in the app
+ZIP_SIGNATURE="$(build/derived/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update "$DIST/DaemonStraight-$VERSION.zip")"
+cat > "$DIST/appcast.xml" <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>DaemonStraight</title>
+        <item>
+            <title>$VERSION</title>
+            <pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
+            <sparkle:version>$BUILD_NUMBER</sparkle:version>
+            <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.5</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[
+$(cat "$NOTES")
+            ]]></description>
+            <enclosure url="https://github.com/$REPO/releases/download/$TAG/DaemonStraight-$VERSION.zip" $ZIP_SIGNATURE type="application/octet-stream"/>
+        </item>
+    </channel>
+</rss>
+EOF
+xmllint --noout "$DIST/appcast.xml" || fail "appcast.xml is not valid"
+
 # MARK: - Commit, Tag & Publish
 git add CHANGELOG.md DaemonStraight.xcodeproj/project.pbxproj
 git commit -q -m "Release $VERSION"
@@ -121,7 +144,7 @@ EOF
 # The tag is already pushed at this point; retry if GitHub has a temporary error
 for attempt in 1 2 3; do
     if gh release create "$TAG" -R "$REPO" --title "DaemonStraight $VERSION" --notes-file "$NOTES" --verify-tag --latest \
-        "$DIST/DaemonStraight-$VERSION.dmg" "$DIST/DaemonStraight-$VERSION.zip" "$DIST/SHA256SUMS.txt"; then
+        "$DIST/DaemonStraight-$VERSION.dmg" "$DIST/DaemonStraight-$VERSION.zip" "$DIST/SHA256SUMS.txt" "$DIST/appcast.xml"; then
         break
     fi
     [ "$attempt" -lt 3 ] || fail "Creating the GitHub release failed. Notes are in $NOTES - rerun the gh release create step"

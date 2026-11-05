@@ -53,6 +53,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var launchKeyboardCheckbox: NSButton!
     private var launchDrawingCheckbox: NSButton!
     private var launchSpotlightCheckbox: NSButton!
+    private var checkForUpdatesCheckbox: NSButton!
 
     convenience init() {
         let window = NSWindow(
@@ -232,6 +233,10 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         view.addSubview(launchDrawingCheckbox)
         launchSpotlightCheckbox = createCheckbox("Spotlight", frame: NSRect(x: 280, y: yPosition, width: 220, height: 20))
         view.addSubview(launchSpotlightCheckbox)
+        yPosition -= 30
+
+        checkForUpdatesCheckbox = createCheckbox("Check for updates when the app starts", frame: NSRect(x: 30, y: yPosition, width: 400, height: 20))
+        view.addSubview(checkForUpdatesCheckbox)
     }
 
     // MARK: - Control Helpers
@@ -332,6 +337,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         launchKeyboardCheckbox.state = settings.launchWithKeyboard ? .on : .off
         launchDrawingCheckbox.state = settings.launchWithDrawing ? .on : .off
         launchSpotlightCheckbox.state = settings.launchWithSpotlight ? .on : .off
+        checkForUpdatesCheckbox.state = settings.checkForUpdatesAtLaunch ? .on : .off
 
         updateSliderLabels()
     }
@@ -376,6 +382,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         settings.launchWithKeyboard = launchKeyboardCheckbox.state == .on
         settings.launchWithDrawing = launchDrawingCheckbox.state == .on
         settings.launchWithSpotlight = launchSpotlightCheckbox.state == .on
+        settings.checkForUpdatesAtLaunch = checkForUpdatesCheckbox.state == .on
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }
 

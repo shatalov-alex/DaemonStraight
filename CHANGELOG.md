@@ -8,8 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Check for Updates menu item, using the [Sparkle](https://sparkle-project.org) framework. Updates are installed only
+  after you confirm them.
+- Optional check for updates when the app starts. The app asks once, and it can be changed in Settings › General.
+  An update found this way only changes the menu bar icon, so no window appears during a presentation.
+
 ### Changed
 
+- The app now connects to the network to check for updates, if you allow it or use the menu item.
 - Releases are signed with a permanent self-signed certificate, so future updates keep the Accessibility permission.
   It has to be granted once more when updating to this version.
 

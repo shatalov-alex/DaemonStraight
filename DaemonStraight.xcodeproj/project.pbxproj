@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		87BCE5012EEC000000BEB4AB /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 87BCE5052EEC000000BEB4AB /* Sparkle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		87BCE4CD2EEAFB4100BEB4AB /* DaemonStraight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DaemonStraight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		87BCE4F12EEB0A0000BEB4AB /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Signing.xcconfig; path = Config/Signing.xcconfig; sourceTree = "<group>"; };
@@ -15,6 +19,7 @@
 		87BCE4ED2EEAFD9400BEB4AB /* Exceptions for "DaemonStraight" folder in "DaemonStraight" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				DaemonStraight.entitlements,
 				Info.plist,
 			);
 			target = 87BCE4CC2EEAFB4100BEB4AB /* DaemonStraight */;
@@ -37,6 +42,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				87BCE5012EEC000000BEB4AB /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -80,6 +86,7 @@
 			);
 			name = DaemonStraight;
 			packageProductDependencies = (
+				87BCE5052EEC000000BEB4AB /* Sparkle */,
 			);
 			productName = DaemonStraight;
 			productReference = 87BCE4CD2EEAFB4100BEB4AB /* DaemonStraight.app */;
@@ -109,6 +116,9 @@
 			);
 			mainGroup = 87BCE4C42EEAFB4100BEB4AB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				87BCE5042EEC000000BEB4AB /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 87BCE4CE2EEAFB4100BEB4AB /* Products */;
 			projectDirPath = "";
@@ -265,6 +275,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = DaemonStraight/DaemonStraight.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
@@ -303,6 +314,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = DaemonStraight/DaemonStraight.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
@@ -356,6 +368,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		87BCE5042EEC000000BEB4AB /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.10.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		87BCE5052EEC000000BEB4AB /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 87BCE5042EEC000000BEB4AB /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 87BCE4C52EEAFB4100BEB4AB /* Project object */;
 }
