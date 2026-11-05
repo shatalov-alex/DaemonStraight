@@ -35,6 +35,7 @@ security find-identity -p codesigning | grep -q "$CERT_SHA1" || fail "The releas
 [ "$(git branch --show-current)" = "main" ] || fail "Releases are made from main"
 [ -z "$(git status --porcelain)" ] || fail "Working tree has uncommitted changes"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fail "Tag $TAG already exists"
+git rev-parse -q --verify "refs/heads/release/$VERSION" >/dev/null && fail "Branch release/$VERSION already exists"
 
 git fetch -q origin main
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || fail "main is not in sync with origin/main"
@@ -118,11 +119,33 @@ $(cat "$NOTES")
 EOF
 xmllint --noout "$DIST/appcast.xml" || fail "appcast.xml is not valid"
 
-# MARK: - Commit, Tag & Publish
+# MARK: - Self-Check
+./scripts/verify_release.sh "$VERSION" "$DIST" | tee "$DIST/self-check.txt"
+[ "${PIPESTATUS[0]}" = 0 ] || fail "Self-check failed, nothing was published"
+
+# MARK: - Pull Request
+# main requires a pull request. A maintainer can't approve their own, so after the self-check it's merged with admin rights
+BRANCH="release/$VERSION"
+git switch -q -c "$BRANCH"
 git add CHANGELOG.md DaemonStraight.xcodeproj/project.pbxproj
 git commit -q -m "Release $VERSION"
+RELEASE_TREE="$(git rev-parse 'HEAD^{tree}')"
+git_push -q -u origin "$BRANCH"
+
+PR_BODY="$(mktemp)"
+{ cat "$NOTES"; printf '\n## Self-check\n\n```\n'; cat "$DIST/self-check.txt"; printf '```\n'; } > "$PR_BODY"
+PR_URL="$(gh pr create -R "$REPO" --base main --head "$BRANCH" --title "Release $VERSION" --body-file "$PR_BODY")"
+rm -f "$PR_BODY" "$DIST/self-check.txt"
+gh pr merge "$PR_URL" -R "$REPO" --admin --merge --delete-branch
+
+git switch -q main
+git -c credential.helper= -c credential.helper='!gh auth git-credential' pull -q --ff-only origin main
+git branch -q -D "$BRANCH" 2>/dev/null || true
+[ "$(git rev-parse 'HEAD^{tree}')" = "$RELEASE_TREE" ] || fail "main differs from the release that was checked"
+
+# MARK: - Tag & Publish
 git tag -a "$TAG" -m "DaemonStraight $VERSION"
-git_push -q origin main "$TAG"
+git_push -q origin "$TAG"
 
 cat >> "$NOTES" <<EOF
 
