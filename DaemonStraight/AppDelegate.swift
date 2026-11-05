@@ -17,10 +17,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var drawingItem: NSMenuItem!
     private var spotlightItem: NSMenuItem!
     private var allFeaturesItem: NSMenuItem!
+    private var updatesItem: NSMenuItem!
     // One click-through overlay per display; each controller draws its own part of the screen
     private var overlays: [(window: NSWindow, controller: ViewController)] = []
     private var settingsWindowController: SettingsWindowController?
     private let settings = SettingsManager.shared
+    private let updateManager = UpdateManager()
 
     // Keyboard shortcut monitors
     private var localHotkeyMonitor: Any?
@@ -60,6 +62,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // Setup window maintenance timer
         setupWindowMaintenance()
+
+        // Check for updates if the user agreed to it
+        setupUpdateChecks()
 
         NSLog("🎉 [AppDelegate] Application ready!")
     }
@@ -105,6 +110,43 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
             }
         }
+    }
+
+    // MARK: - Updates
+    private func setupUpdateChecks() {
+        updateManager.onAvailableVersionChanged = { [weak self] version in
+            self?.showAvailableUpdate(version)
+        }
+
+        if !settings.hasChosenUpdateChecks {
+            askAboutUpdateChecks()
+        }
+        if settings.checkForUpdatesAtLaunch {
+            updateManager.checkInBackground()
+        }
+    }
+
+    private func askAboutUpdateChecks() {
+        let alert = NSAlert()
+        alert.messageText = "Check for Updates When the App Starts?"
+        alert.informativeText = "DaemonStraight can check GitHub for a new version each time it starts. Nothing is downloaded or installed unless you confirm it.\n\nYou can change this later in Settings > General."
+        alert.addButton(withTitle: "Check at Start")
+        alert.addButton(withTitle: "Don't Check")
+
+        NSApp.activate(ignoringOtherApps: true)
+        settings.checkForUpdatesAtLaunch = alert.runModal() == .alertFirstButtonReturn
+    }
+
+    // A quiet hint in the menu bar: an update window must not appear during a presentation
+    private func showAvailableUpdate(_ version: String?) {
+        let symbol = version == nil ? "display" : "arrow.down.circle"
+        statusItem.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "DaemonStraight")
+        statusItem.button?.image?.isTemplate = true
+        updatesItem.title = version.map { "Update to \($0)..." } ?? "Check for Updates..."
+    }
+
+    @objc private func checkForUpdates() {
+        updateManager.checkForUpdates()
     }
 
     // MARK: - Menu Bar Setup
@@ -165,6 +207,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
+
+        // Updates
+        updatesItem = NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdates), keyEquivalent: "")
+        updatesItem.target = self
+        menu.addItem(updatesItem)
 
         menu.addItem(NSMenuItem.separator())
 
