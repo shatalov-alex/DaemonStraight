@@ -33,6 +33,8 @@
 - **Multiple displays.** Works on every connected display, and adapts when displays are connected, disconnected
   or rearranged. Shortcuts are shown on all displays, so they're visible whichever screen you share.
 - **Menu bar only.** No Dock icon and no windows in the way. Everything is controlled from the menu bar or with global hotkeys.
+- **Updates in the app.** Check for new versions from the menu, or at every start if you allow it. An update found at
+  start only changes the menu bar icon, so no window appears in the middle of a presentation.
 - **Customizable.** Colors, sizes, which keys to display, where to show them, the toggle hotkeys and the features that turn
   on at launch can all be changed in Settings.
 
@@ -59,7 +61,7 @@
    Close the message, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
 4. Grant Accessibility access (see [below](#granting-accessibility-access)).
 
-The app runs on both Apple silicon and Intel Macs.
+The app runs on both Apple silicon and Intel Macs. To update later, use **Check for Updates...** in the menu.
 
 ### Build from source
 
@@ -89,7 +91,8 @@ On first launch, macOS asks you to allow DaemonStraight to control your computer
 
 > [!NOTE]
 > macOS ties this permission to the app's code signature. If you rebuild the app with a different (or ad-hoc)
-> signature, remove the old entry from the list and grant access again.
+> signature, remove the old entry from the list and grant access again. Releases after 1.1.0 share one
+> certificate, so updating from one of them to a newer one keeps the permission.
 
 ## Usage
 
@@ -135,7 +138,8 @@ Open **Settings…** from the menu bar icon (or press `⌘,` while the menu is o
 - **Keyboard:** which keys the shortcut display shows (modifiers, function keys, special keys, clicks with modifiers
   and, optionally, plain typing), the screen corner and the key size
 - **Drawing:** line color and width
-- **General:** the toggle hotkeys (each must include at least one of `⌃`, `⌥` or `⌘`) and the features that turn on at launch
+- **General:** the toggle hotkeys (each must include at least one of `⌃`, `⌥` or `⌘`), the features that turn on at launch
+  and whether to check for updates when the app starts
 
 Changes apply immediately and are saved automatically.
 
@@ -144,8 +148,24 @@ Changes apply immediately and are saved automatically.
 DaemonStraight observes keyboard and mouse events only to draw the overlay in real time.
 
 - Pressed keys are **never written to logs or disk** and are kept in memory only while they are on screen.
-- The app makes **no network connections**.
+- The app connects to the network **only to check for updates**, when you choose **Check for Updates...** or allow
+  checks at start (it asks once, and you can change this in **Settings → General**). It then downloads a small file with
+  the latest version number from this project's GitHub releases. No personal data or usage statistics are sent;
+  as with any download, GitHub can see your IP address.
+- Updates are installed only after you confirm them, and their signature is checked first. They are handled by a
+  helper from the [Sparkle](https://sparkle-project.org) framework; the app itself has no network permission.
 - Settings are stored locally in the app's preferences (`UserDefaults`).
+
+### Verifying a download
+
+Releases are signed with a self-signed certificate: [`Config/release-certificate.pem`](Config/release-certificate.pem).
+It doesn't replace Apple's notarization, but you can check that an app comes from this project:
+
+```bash
+codesign -d -r- /Applications/DaemonStraight.app
+```
+
+The output must contain `f691fccd86582aa17b5ec5a6cf598b8a857e531e`, the certificate's SHA-1 fingerprint.
 
 ## Project structure
 
@@ -161,11 +181,13 @@ DaemonStraight/
 ├── ShortcutPressedViewContainer.swift, ShortcutPressedView.swift,
 │   ButtonView.swift, BlurredView.swift, KeyShape.swift, KeyMapping.swift
 │                                    Keycap rendering for the shortcut display
+├── UpdateManager.swift              Update checks (Sparkle)
 ├── SettingsManager.swift            Persistent settings
 └── SettingsWindowController.swift   Settings window and hotkey recorder
 scripts/
 ├── build_release.sh                 Universal (Apple silicon + Intel) release build
 ├── release.sh                       Versions, tags, packages and publishes a release
+├── create_signing_certificate.sh    Creates the release certificate (run once)
 └── generate_icons.py                Generates the app and menu bar icons (requires Pillow)
 ```
 

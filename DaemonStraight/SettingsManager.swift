@@ -44,6 +44,9 @@ class SettingsManager {
         static let launchWithDrawing = "launchWithDrawing"
         static let launchWithSpotlight = "launchWithSpotlight"
 
+        // Updates
+        static let checkForUpdatesAtLaunch = "checkForUpdatesAtLaunch"
+
         // Hotkeys
         static let mouseToggleHotkey = "mouseToggleHotkey"
         static let keyboardToggleHotkey = "keyboardToggleHotkey"
@@ -170,6 +173,16 @@ class SettingsManager {
     var launchWithDrawing: Bool {
         get { defaults.bool(forKey: Keys.launchWithDrawing) }
         set { defaults.set(newValue, forKey: Keys.launchWithDrawing) }
+    }
+
+    // Off until the user agrees: the app doesn't connect to the network without permission
+    var checkForUpdatesAtLaunch: Bool {
+        get { defaults.bool(forKey: Keys.checkForUpdatesAtLaunch) }
+        set { defaults.set(newValue, forKey: Keys.checkForUpdatesAtLaunch) }
+    }
+
+    var hasChosenUpdateChecks: Bool {
+        return defaults.object(forKey: Keys.checkForUpdatesAtLaunch) != nil
     }
 
     var launchWithSpotlight: Bool {
@@ -367,5 +380,6 @@ class SettingsManager {
         defaults.removeObject(forKey: Keys.launchWithKeyboard)
         defaults.removeObject(forKey: Keys.launchWithDrawing)
         defaults.removeObject(forKey: Keys.launchWithSpotlight)
+        defaults.removeObject(forKey: Keys.checkForUpdatesAtLaunch)
     }
 }
