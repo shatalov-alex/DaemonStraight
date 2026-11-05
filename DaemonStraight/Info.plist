@@ -17,6 +17,16 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>DaemonStraight needs to monitor keyboard events to display shortcuts during presentations.</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUEnableDownloaderService</key>
+	<true/>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/shatalov-alex/DaemonStraight/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>TVtLlt5H2etDTyrzXaQMtHcrUPlZKVQ0E6nxXvK8sa0=</string>
 	<key>NSSystemAdministrationUsageDescription</key>
 	<string>DaemonStraight needs accessibility access to monitor keyboard and mouse events for presentation assistance features like mouse highlighting and keyboard shortcuts display.</string>
 </dict>

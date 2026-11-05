@@ -11,18 +11,23 @@ cd "$(dirname "$0")/.."
 echo "🚀 Building DaemonStraight for Release..."
 echo ""
 
+DERIVED_DATA="build/derived"
+
 # Clean previous builds
 echo "🧹 Cleaning previous builds..."
-xcodebuild clean -project DaemonStraight.xcodeproj -configuration Release
+xcodebuild clean -project DaemonStraight.xcodeproj -scheme DaemonStraight -configuration Release -derivedDataPath "$DERIVED_DATA"
+rm -rf build/Release
 
 # Build the app in Release mode
 # Strip symbols and map source paths so the binary doesn't contain local build paths
 echo "🔨 Building Release configuration..."
 xcodebuild build \
     -project DaemonStraight.xcodeproj \
+    -scheme DaemonStraight \
     -configuration Release \
-    -arch x86_64 \
-    -arch arm64 \
+    -destination "generic/platform=macOS" \
+    -derivedDataPath "$DERIVED_DATA" \
+    ONLY_ACTIVE_ARCH=NO \
     CODE_SIGN_IDENTITY="-" \
     CODE_SIGNING_REQUIRED=NO \
     DEPLOYMENT_POSTPROCESSING=YES \
@@ -33,6 +38,8 @@ xcodebuild build \
 # Find the built app
 BUILD_DIR="build/Release"
 APP_PATH="$BUILD_DIR/DaemonStraight.app"
+mkdir -p "$BUILD_DIR"
+ditto "$DERIVED_DATA/Build/Products/Release/DaemonStraight.app" "$APP_PATH"
 
 if [ -d "$APP_PATH" ]; then
     # Sign with the release certificate, so the Accessibility permission survives updates.
@@ -42,6 +49,14 @@ if [ -d "$APP_PATH" ]; then
         echo "⚠️  \"$SIGN_IDENTITY\" not found, signing ad-hoc"
         SIGN_IDENTITY="-"
     fi
+
+    # Sparkle's helpers are signed from the inside out, as Sparkle's documentation describes
+    SPARKLE="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none -o runtime "$SPARKLE/Versions/B/XPCServices/Installer.xpc"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none -o runtime --preserve-metadata=entitlements "$SPARKLE/Versions/B/XPCServices/Downloader.xpc"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none -o runtime "$SPARKLE/Versions/B/Autoupdate"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none -o runtime "$SPARKLE/Versions/B/Updater.app"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none -o runtime "$SPARKLE"
 
     # Re-sign without the debugger (get-task-allow) entitlement, keeping the App Sandbox ones
     ENTITLEMENTS="$(mktemp)"
