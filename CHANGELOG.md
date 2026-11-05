@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-05
+
 ### Fixed
 
 - App startup no longer relies on code that the Swift 6 language mode would reject. Nothing changes in how the app works.
@@ -58,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for multiple displays.
 - Settings for colors, sizes, displayed keys and toggle hotkeys.
 
-[Unreleased]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/shatalov-alex/DaemonStraight/releases/tag/v1.0.0
