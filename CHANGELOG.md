@@ -13,11 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Arrows: hold `⇧⌘` and move the mouse while drawing mode is on. Like straight lines, they can be switched to and from
   in the middle of a stroke.
 - Undo the last stroke with `⌃⌥⌘U` (can be changed in Settings › Drawing) or from the menu.
+- The cursor ring fades in and out when mouse highlighting is turned on or off.
+- **Animation Durations** in Settings (the triangle at the bottom of the window): the mouse click animation, the ring
+  fade, how long keycaps stay and slide, and how long drawings stay and fade. The defaults are the previous durations.
 
 ### Fixed
 
 - With Caps Lock on, a new stroke made all drawings fade three seconds later. Now they stay until Caps Lock is off.
 - Pressing `⇧` without moving the mouse (typing capitals while drawing mode is on) no longer restarts the fade countdown.
+- The cursor ring no longer stays pressed after a click on the app's menu or Settings window.
 - After switching from freehand to a straight line mid-stroke, the line now starts where the freehand part ends, as it is
   shown while drawing.
 

@@ -60,6 +60,14 @@ class SettingsManager {
         static let zoomToggleHotkey = "zoomToggleHotkey"
         static let allToggleHotkey = "allToggleHotkey"
         static let undoDrawingHotkey = "undoDrawingHotkey"
+
+        // Animation durations
+        static let clickAnimationDuration = "clickAnimationDuration"
+        static let ringFadeDuration = "ringFadeDuration"
+        static let keycapDisplayTime = "keycapDisplayTime"
+        static let keycapAnimationDuration = "keycapAnimationDuration"
+        static let drawingHoldTime = "drawingHoldTime"
+        static let drawingFadeDuration = "drawingFadeDuration"
     }
 
     // Screen corner where pressed shortcuts are shown
@@ -368,6 +376,49 @@ class SettingsManager {
         set { setHotkey(newValue, forKey: Keys.undoDrawingHotkey) }
     }
 
+    // MARK: - Animation Durations (seconds)
+
+    /// The outer ring shrinking on a mouse press; growing back on release takes 1.5 times as long
+    var clickAnimationDuration: TimeInterval {
+        get { duration(forKey: Keys.clickAnimationDuration, default: 0.2) }
+        set { defaults.set(newValue, forKey: Keys.clickAnimationDuration) }
+    }
+
+    /// The ring fading in and out when mouse highlighting is turned on or off
+    var ringFadeDuration: TimeInterval {
+        get { duration(forKey: Keys.ringFadeDuration, default: 0.2) }
+        set { defaults.set(newValue, forKey: Keys.ringFadeDuration) }
+    }
+
+    /// How long a keycap stays on screen
+    var keycapDisplayTime: TimeInterval {
+        get { duration(forKey: Keys.keycapDisplayTime, default: 3.0) }
+        set { defaults.set(newValue, forKey: Keys.keycapDisplayTime) }
+    }
+
+    /// A keycap sliding in, and fading out
+    var keycapAnimationDuration: TimeInterval {
+        get { duration(forKey: Keys.keycapAnimationDuration, default: 0.3) }
+        set { defaults.set(newValue, forKey: Keys.keycapAnimationDuration) }
+    }
+
+    /// How long drawings stay after ⇧ is released
+    var drawingHoldTime: TimeInterval {
+        get { duration(forKey: Keys.drawingHoldTime, default: 3.0) }
+        set { defaults.set(newValue, forKey: Keys.drawingHoldTime) }
+    }
+
+    /// Drawings fading out
+    var drawingFadeDuration: TimeInterval {
+        get { duration(forKey: Keys.drawingFadeDuration, default: 0.5) }
+        set { defaults.set(newValue, forKey: Keys.drawingFadeDuration) }
+    }
+
+    // 0 is a valid duration (no animation), so a missing value is told apart from 0
+    private func duration(forKey key: String, default value: TimeInterval) -> TimeInterval {
+        (defaults.object(forKey: key) as? NSNumber)?.doubleValue ?? value
+    }
+
     private func hotkey(forKey key: String) -> Hotkey? {
         guard let data = defaults.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(Hotkey.self, from: data)
@@ -410,6 +461,12 @@ class SettingsManager {
         defaults.removeObject(forKey: Keys.zoomToggleHotkey)
         defaults.removeObject(forKey: Keys.allToggleHotkey)
         defaults.removeObject(forKey: Keys.undoDrawingHotkey)
+        defaults.removeObject(forKey: Keys.clickAnimationDuration)
+        defaults.removeObject(forKey: Keys.ringFadeDuration)
+        defaults.removeObject(forKey: Keys.keycapDisplayTime)
+        defaults.removeObject(forKey: Keys.keycapAnimationDuration)
+        defaults.removeObject(forKey: Keys.drawingHoldTime)
+        defaults.removeObject(forKey: Keys.drawingFadeDuration)
         defaults.removeObject(forKey: Keys.showModifierClicks)
         defaults.removeObject(forKey: Keys.shortcutPosition)
         defaults.removeObject(forKey: Keys.shortcutKeySize)

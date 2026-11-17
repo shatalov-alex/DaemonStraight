@@ -15,7 +15,6 @@ class ShortcutPressedViewContainer: NSView {
     private var shortcutViewsPadding: CGFloat = 10.0
     private let margin: CGFloat = 20.0
 
-    private let maxDisplayTime: TimeInterval = 3.0
     private let settings = SettingsManager.shared
 
     // MARK: - Initialization
@@ -65,7 +64,7 @@ class ShortcutPressedViewContainer: NSView {
 
         // Animate in
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.3
+            context.duration = settings.keycapAnimationDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
 
             newView.animator().alphaValue = 1.0
@@ -126,7 +125,7 @@ class ShortcutPressedViewContainer: NSView {
     }
 
     private func scheduleRemoval(of view: ShortcutPressedView) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + maxDisplayTime) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + settings.keycapDisplayTime) { [weak self] in
             self?.removeShortcutView(view)
         }
     }
@@ -135,7 +134,7 @@ class ShortcutPressedViewContainer: NSView {
         guard shortcutViews.contains(view) else { return }
 
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.3
+            context.duration = settings.keycapAnimationDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
 
             view.animator().alphaValue = 0.0

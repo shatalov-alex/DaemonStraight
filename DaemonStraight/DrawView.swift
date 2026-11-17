@@ -25,8 +25,8 @@ class DrawView: NSView {
     private var segmentStart: CGPoint = .zero
     private var segmentEnd: CGPoint = .zero
 
-    private let fadeOutDuration: TimeInterval = 3.0
-    private let fadeAnimationDuration: TimeInterval = 0.5
+    private var fadeOutDuration: TimeInterval { settings.drawingHoldTime }
+    private var fadeAnimationDuration: TimeInterval { settings.drawingFadeDuration }
     private var disappearanceTimer: Timer?
     private var countdownPaused: Bool = false
     private var lastDrawingCompletedTime: Date?
