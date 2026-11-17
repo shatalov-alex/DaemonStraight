@@ -38,6 +38,11 @@ class SettingsManager {
         static let spotlightDiameter = "spotlightDiameter"
         static let spotlightDimOpacity = "spotlightDimOpacity"
 
+        // Zoom
+        static let zoomDiameter = "zoomDiameter"
+        static let zoomMagnification = "zoomMagnification"
+        static let hasAskedForScreenRecording = "hasAskedForScreenRecording"
+
         // Features turned on at launch
         static let launchWithMouse = "launchWithMouse"
         static let launchWithKeyboard = "launchWithKeyboard"
@@ -52,6 +57,7 @@ class SettingsManager {
         static let keyboardToggleHotkey = "keyboardToggleHotkey"
         static let drawingToggleHotkey = "drawingToggleHotkey"
         static let spotlightToggleHotkey = "spotlightToggleHotkey"
+        static let zoomToggleHotkey = "zoomToggleHotkey"
         static let allToggleHotkey = "allToggleHotkey"
     }
 
@@ -157,6 +163,24 @@ class SettingsManager {
     var spotlightDimOpacity: CGFloat {
         get { CGFloat(defaults.double(forKey: Keys.spotlightDimOpacity)) > 0 ? CGFloat(defaults.double(forKey: Keys.spotlightDimOpacity)) : 0.6 }
         set { defaults.set(Double(newValue), forKey: Keys.spotlightDimOpacity) }
+    }
+
+    // MARK: - Zoom Settings
+    var zoomDiameter: CGFloat {
+        get { CGFloat(defaults.double(forKey: Keys.zoomDiameter)) > 0 ? CGFloat(defaults.double(forKey: Keys.zoomDiameter)) : 300.0 }
+        set { defaults.set(Double(newValue), forKey: Keys.zoomDiameter) }
+    }
+
+    // How many times the lens enlarges the screen
+    var zoomMagnification: CGFloat {
+        get { CGFloat(defaults.double(forKey: Keys.zoomMagnification)) >= 1 ? CGFloat(defaults.double(forKey: Keys.zoomMagnification)) : 2.0 }
+        set { defaults.set(Double(newValue), forKey: Keys.zoomMagnification) }
+    }
+
+    // macOS shows its Screen Recording prompt only once; later the app opens System Settings instead
+    var hasAskedForScreenRecording: Bool {
+        get { defaults.bool(forKey: Keys.hasAskedForScreenRecording) }
+        set { defaults.set(newValue, forKey: Keys.hasAskedForScreenRecording) }
     }
 
     // MARK: - Launch Settings (all features are off at launch by default)
@@ -324,6 +348,12 @@ class SettingsManager {
         set { setHotkey(newValue, forKey: Keys.spotlightToggleHotkey) }
     }
 
+    var zoomToggleHotkey: Hotkey {
+        // Default: ⌃⌥⌘Z
+        get { hotkey(forKey: Keys.zoomToggleHotkey) ?? Hotkey(keyCode: 6, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.zoomToggleHotkey) }
+    }
+
     var allToggleHotkey: Hotkey {
         // Default: ⌃⌥⌘A
         get { hotkey(forKey: Keys.allToggleHotkey) ?? Hotkey(keyCode: 0, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
@@ -370,12 +400,15 @@ class SettingsManager {
         defaults.removeObject(forKey: Keys.keyboardToggleHotkey)
         defaults.removeObject(forKey: Keys.drawingToggleHotkey)
         defaults.removeObject(forKey: Keys.spotlightToggleHotkey)
+        defaults.removeObject(forKey: Keys.zoomToggleHotkey)
         defaults.removeObject(forKey: Keys.allToggleHotkey)
         defaults.removeObject(forKey: Keys.showModifierClicks)
         defaults.removeObject(forKey: Keys.shortcutPosition)
         defaults.removeObject(forKey: Keys.shortcutKeySize)
         defaults.removeObject(forKey: Keys.spotlightDiameter)
         defaults.removeObject(forKey: Keys.spotlightDimOpacity)
+        defaults.removeObject(forKey: Keys.zoomDiameter)
+        defaults.removeObject(forKey: Keys.zoomMagnification)
         defaults.removeObject(forKey: Keys.launchWithMouse)
         defaults.removeObject(forKey: Keys.launchWithKeyboard)
         defaults.removeObject(forKey: Keys.launchWithDrawing)

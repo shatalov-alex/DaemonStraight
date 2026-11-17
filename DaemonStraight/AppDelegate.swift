@@ -16,6 +16,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var keyboardItem: NSMenuItem!
     private var drawingItem: NSMenuItem!
     private var spotlightItem: NSMenuItem!
+    private var zoomItem: NSMenuItem!
     private var allFeaturesItem: NSMenuItem!
     private var updatesItem: NSMenuItem!
     // One click-through overlay per display; each controller draws its own part of the screen
@@ -188,6 +189,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         spotlightItem.target = self
         menu.addItem(spotlightItem)
 
+        zoomItem = NSMenuItem(title: "Zoom", action: #selector(toggleZoom), keyEquivalent: "")
+        zoomItem.target = self
+        menu.addItem(zoomItem)
+
         menu.addItem(NSMenuItem.separator())
 
         allFeaturesItem = NSMenuItem(title: "Turn All On", action: #selector(toggleAllFeatures), keyEquivalent: "")
@@ -279,8 +284,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let keyboardOn = current?.shortcutsCatchIsOn ?? false
         let drawingOn = current?.drawingIsOn ?? false
         let spotlightOn = current?.spotlightIsOn ?? false
+        let zoomOn = current?.zoomIsOn ?? false
 
         for overlay in overlays {
+            if overlay.controller.zoomIsOn { overlay.controller.toggleZoom() }  // stops its capture
             overlay.window.orderOut(nil)
             overlay.window.contentViewController = nil
             overlay.window.close()
@@ -289,6 +296,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setupOverlayWindows()
 
         setFeatures(mouse: mouseOn, keyboard: keyboardOn, drawing: drawingOn, spotlight: spotlightOn)
+        if zoomOn {
+            overlays.forEach { $0.controller.toggleZoom() }
+            updateMenuItemStates()
+        }
     }
 
     // MARK: - Global Keyboard Shortcuts
@@ -322,6 +333,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let keyboardHotkey = settings.keyboardToggleHotkey
         let drawingHotkey = settings.drawingToggleHotkey
         let spotlightHotkey = settings.spotlightToggleHotkey
+        let zoomHotkey = settings.zoomToggleHotkey
         let allHotkey = settings.allToggleHotkey
 
         if keyCode == mouseHotkey.keyCode && modifiers.rawValue == mouseHotkey.modifiers {
@@ -332,6 +344,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             toggleDrawingMode()
         } else if keyCode == spotlightHotkey.keyCode && modifiers.rawValue == spotlightHotkey.modifiers {
             toggleSpotlight()
+        } else if keyCode == zoomHotkey.keyCode && modifiers.rawValue == zoomHotkey.modifiers {
+            toggleZoom()
         } else if keyCode == allHotkey.keyCode && modifiers.rawValue == allHotkey.modifiers {
             toggleAllFeatures()
         }
@@ -360,15 +374,44 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateMenuItemStates()
     }
 
-    // Turns everything off if anything is on, otherwise turns everything on
+    @objc private func toggleZoom() {
+        let turnOn = !(overlays.first?.controller.zoomIsOn ?? false)
+        if turnOn && !CGPreflightScreenCaptureAccess() {
+            requestScreenRecordingPermission()
+            return
+        }
+        overlays.forEach { $0.controller.toggleZoom() }
+        updateMenuItemStates()
+    }
+
+    // Zoom shows a captured picture of the screen, so it needs Screen Recording. macOS asks only once;
+    // after that the setting is opened, as the prompt doesn't appear again
+    private func requestScreenRecordingPermission() {
+        NSLog("🔐 [Permissions] Screen Recording permission not granted")
+        if settings.hasAskedForScreenRecording {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                NSWorkspace.shared.open(url)
+            }
+        } else {
+            settings.hasAskedForScreenRecording = true
+            CGRequestScreenCaptureAccess()
+        }
+    }
+
+    // Turns everything off if anything is on, otherwise turns everything on.
+    // Zoom is only turned off: it needs a permission and isn't meant to be on together with the rest
     @objc private func toggleAllFeatures() {
         let turnOn = !anyFeatureIsOn
+        if !turnOn {
+            overlays.filter { $0.controller.zoomIsOn }.forEach { $0.controller.toggleZoom() }
+        }
         setFeatures(mouse: turnOn, keyboard: turnOn, drawing: turnOn, spotlight: turnOn)
     }
 
     private var anyFeatureIsOn: Bool {
         guard let controller = overlays.first?.controller else { return false }
         return controller.mouseIsOn || controller.shortcutsCatchIsOn || controller.drawingIsOn || controller.spotlightIsOn
+            || controller.zoomIsOn
     }
 
     private func setFeatures(mouse: Bool, keyboard: Bool, drawing: Bool, spotlight: Bool) {
@@ -409,6 +452,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         keyboardItem?.state = controller?.shortcutsCatchIsOn == true ? .on : .off
         drawingItem?.state = controller?.drawingIsOn == true ? .on : .off
         spotlightItem?.state = controller?.spotlightIsOn == true ? .on : .off
+        zoomItem?.state = controller?.zoomIsOn == true ? .on : .off
         allFeaturesItem?.title = anyFeatureIsOn ? "Turn All Off" : "Turn All On"
     }
 

@@ -26,6 +26,12 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var spotlightDimSlider: NSSlider!
     private var spotlightDimLabel: NSTextField!
 
+    // Zoom controls
+    private var zoomDiameterSlider: NSSlider!
+    private var zoomDiameterLabel: NSTextField!
+    private var zoomMagnificationSlider: NSSlider!
+    private var zoomMagnificationLabel: NSTextField!
+
     // Drawing controls
     private var drawingColorWell: NSColorWell!
     private var drawingWidthSlider: NSSlider!
@@ -46,6 +52,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var keyboardHotkeyRecorder: HotkeyRecorderView!
     private var drawingHotkeyRecorder: HotkeyRecorderView!
     private var spotlightHotkeyRecorder: HotkeyRecorderView!
+    private var zoomHotkeyRecorder: HotkeyRecorderView!
     private var allHotkeyRecorder: HotkeyRecorderView!
 
     // Launch controls
@@ -57,7 +64,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 560),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -77,7 +84,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let contentView = NSView(frame: window.contentLayoutRect)
         window.contentView = contentView
 
-        let tabView = NSTabView(frame: NSRect(x: 12, y: 60, width: 576, height: 428))
+        let tabView = NSTabView(frame: NSRect(x: 12, y: 60, width: 576, height: 488))
         contentView.addSubview(tabView)
         tabView.addTabViewItem(createTab("Mouse", in: tabView, setup: setupMouseTab))
         tabView.addTabViewItem(createTab("Keyboard", in: tabView, setup: setupKeyboardTab))
@@ -136,6 +143,15 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         (spotlightDiameterSlider, spotlightDiameterLabel) = addSliderRow("Diameter:", to: view, y: yPosition, min: 150, max: 800)
         yPosition -= 30
         (spotlightDimSlider, spotlightDimLabel) = addSliderRow("Dimming:", to: view, y: yPosition, min: 20, max: 90)
+        yPosition -= 40
+
+        view.addSubview(createSectionLabel("Zoom", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        (zoomDiameterSlider, zoomDiameterLabel) = addSliderRow("Diameter:", to: view, y: yPosition, min: 150, max: 600)
+        yPosition -= 30
+        // Tenths: 15 = 1.5×
+        (zoomMagnificationSlider, zoomMagnificationLabel) = addSliderRow("Magnification:", to: view, y: yPosition, min: 15, max: 40)
     }
 
     // MARK: - Keyboard Tab
@@ -211,6 +227,8 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         drawingHotkeyRecorder = addHotkeyRow("Toggle Drawing:", to: view, y: yPosition)
         yPosition -= 35
         spotlightHotkeyRecorder = addHotkeyRow("Toggle Spotlight:", to: view, y: yPosition)
+        yPosition -= 35
+        zoomHotkeyRecorder = addHotkeyRow("Toggle Zoom:", to: view, y: yPosition)
         yPosition -= 35
         allHotkeyRecorder = addHotkeyRow("Toggle All:", to: view, y: yPosition)
         yPosition -= 45
@@ -312,6 +330,10 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         spotlightDiameterSlider.doubleValue = Double(settings.spotlightDiameter)
         spotlightDimSlider.doubleValue = Double(settings.spotlightDimOpacity * 100)
 
+        // Zoom
+        zoomDiameterSlider.doubleValue = Double(settings.zoomDiameter)
+        zoomMagnificationSlider.doubleValue = Double(settings.zoomMagnification * 10)
+
         // Drawing
         drawingColorWell.color = settings.drawingColor
         drawingWidthSlider.doubleValue = Double(settings.drawingWidth)
@@ -330,6 +352,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         keyboardHotkeyRecorder.hotkey = settings.keyboardToggleHotkey
         drawingHotkeyRecorder.hotkey = settings.drawingToggleHotkey
         spotlightHotkeyRecorder.hotkey = settings.spotlightToggleHotkey
+        zoomHotkeyRecorder.hotkey = settings.zoomToggleHotkey
         allHotkeyRecorder.hotkey = settings.allToggleHotkey
 
         // Launch
@@ -347,6 +370,8 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         mouseWidthLabel.stringValue = "\(Int(settings.mouseWidth))"
         spotlightDiameterLabel.stringValue = "\(Int(settings.spotlightDiameter))"
         spotlightDimLabel.stringValue = "\(Int((settings.spotlightDimOpacity * 100).rounded()))%"
+        zoomDiameterLabel.stringValue = "\(Int(settings.zoomDiameter))"
+        zoomMagnificationLabel.stringValue = String(format: "%.1f×", settings.zoomMagnification)
         drawingWidthLabel.stringValue = "\(Int(settings.drawingWidth))"
         keySizeLabel.stringValue = "\(Int(settings.shortcutKeySize))"
     }
@@ -365,6 +390,8 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         settings.mouseWidth = CGFloat(mouseWidthSlider.doubleValue.rounded())
         settings.spotlightDiameter = CGFloat(spotlightDiameterSlider.doubleValue.rounded())
         settings.spotlightDimOpacity = CGFloat(spotlightDimSlider.doubleValue.rounded()) / 100
+        settings.zoomDiameter = CGFloat(zoomDiameterSlider.doubleValue.rounded())
+        settings.zoomMagnification = CGFloat(zoomMagnificationSlider.doubleValue.rounded()) / 10
         settings.drawingWidth = CGFloat(drawingWidthSlider.doubleValue.rounded())
         settings.shortcutKeySize = CGFloat(keySizeSlider.doubleValue.rounded())
         updateSliderLabels()
@@ -407,7 +434,8 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private var hotkeyRecorders: [HotkeyRecorderView] {
-        [mouseHotkeyRecorder, keyboardHotkeyRecorder, drawingHotkeyRecorder, spotlightHotkeyRecorder, allHotkeyRecorder]
+        [mouseHotkeyRecorder, keyboardHotkeyRecorder, drawingHotkeyRecorder, spotlightHotkeyRecorder, zoomHotkeyRecorder,
+         allHotkeyRecorder]
     }
 
     private func saveHotkeys() {
@@ -415,6 +443,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         settings.keyboardToggleHotkey = keyboardHotkeyRecorder.hotkey
         settings.drawingToggleHotkey = drawingHotkeyRecorder.hotkey
         settings.spotlightToggleHotkey = spotlightHotkeyRecorder.hotkey
+        settings.zoomToggleHotkey = zoomHotkeyRecorder.hotkey
         settings.allToggleHotkey = allHotkeyRecorder.hotkey
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }

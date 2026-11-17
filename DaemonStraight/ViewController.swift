@@ -15,6 +15,7 @@ class ViewController: NSViewController {
     private var shortcutsView: ShortcutPressedViewContainer?
     private var mouseCircleView: CircleView?
     private var spotlightView: SpotlightView?
+    private var zoomView: ZoomView?
     private let settings = SettingsManager.shared
 
     // State flags
@@ -22,6 +23,9 @@ class ViewController: NSViewController {
     var mouseIsOn: Bool = false  // Start with mouse highlighting OFF
     var shortcutsCatchIsOn: Bool = false  // Start with keyboard display OFF
     var spotlightIsOn: Bool = false
+    var zoomIsOn: Bool = false
+    // Moves the lens once per screen refresh (macOS 14+); on older systems the 60 fps timer does it
+    private var zoomDisplayLink: AnyObject?
 
     // Modes
     var mouseHighlightMode: Bool = false  // Start with mouse highlighting OFF
@@ -96,6 +100,8 @@ class ViewController: NSViewController {
         NSLog("🗑️  [ViewController] deinit - Cleaning up...")
         removeEventMonitors()
         mouseTrackingTimer?.invalidate()
+        stopZoomDisplayLink()
+        zoomView?.stop()
     }
 
     // MARK: - UI Setup
@@ -129,6 +135,13 @@ class ViewController: NSViewController {
         view.addSubview(spotlight)
         spotlightView = spotlight
 
+        // Setup zoom lens (above the dimming, below the keycaps and the ring)
+        let zoom = ZoomView(frame: view.bounds)
+        zoom.autoresizingMask = [.width, .height]
+        zoom.isHidden = true
+        view.addSubview(zoom)
+        zoomView = zoom
+
         // Setup shortcuts display container
         let shortcutsContainer = ShortcutPressedViewContainer(frame: view.bounds)
         shortcutsContainer.autoresizingMask = [.width, .height]
@@ -150,6 +163,20 @@ class ViewController: NSViewController {
     }
 
     // MARK: - Event Monitoring
+    // Without Zoom, every mouse move also moves the ring right away. With Zoom, the moves aren't listened to:
+    // the screen capture keeps WindowServer busy, and fetching each event from it then blocks the main thread
+    // for tens of milliseconds, so the lens stutters. The ring and the lens both move once per screen refresh
+    private func addMouseMonitor() {
+        if let monitor = mouseMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        let events: NSEvent.EventTypeMask = zoomIsOn ? [.leftMouseDown, .rightMouseDown]
+                                                     : [.leftMouseDown, .rightMouseDown, .mouseMoved]
+        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: events) { [weak self] event in
+            self?.handleMouseEvent(event)
+        }
+    }
+
     private func setupEventMonitors() {
         NSLog("👂 [ViewController] Setting up GLOBAL event monitors (work regardless of app focus)...")
 
@@ -160,9 +187,7 @@ class ViewController: NSViewController {
         NSLog("  ✅ Global key event monitor added")
 
         // GLOBAL mouse event monitor for clicks and movement
-        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .mouseMoved]) { [weak self] event in
-            self?.handleMouseEvent(event)
-        }
+        addMouseMonitor()
         NSLog("  ✅ Global mouse event monitor added")
 
         // GLOBAL mouse drag monitor for drawing
@@ -198,6 +223,10 @@ class ViewController: NSViewController {
 
         if spotlightIsOn {
             updateSpotlight(at: location)
+        }
+
+        if zoomIsOn && zoomDisplayLink == nil {
+            updateZoom(at: location)
         }
 
         // Update drawing if shift is pressed and drawing mode is enabled
@@ -582,6 +611,24 @@ class ViewController: NSViewController {
         }
     }
 
+    // MARK: - Zoom
+    private func updateZoom(at location: CGPoint) {
+        guard let zoom = zoomView else { return }
+
+        // Only the display with the cursor shows the lens
+        let point = convertScreenToView(location)
+        let isOnThisDisplay = view.bounds.contains(point)
+        if zoom.isHidden == isOnThisDisplay {
+            zoom.isHidden = !isOnThisDisplay
+        }
+        if isOnThisDisplay {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            zoom.move(to: point)
+            CATransaction.commit()
+        }
+    }
+
     // MARK: - Mouse Highlight
     private func updateMouseHighlight(at location: CGPoint) {
         guard mouseIsOn else { return }
@@ -658,6 +705,46 @@ class ViewController: NSViewController {
         }
     }
 
+    func toggleZoom() {
+        zoomIsOn.toggle()
+        addMouseMonitor()
+
+        if zoomIsOn {
+            zoomView?.start()
+            startZoomDisplayLink()
+            updateZoom(at: NSEvent.mouseLocation)
+        } else {
+            stopZoomDisplayLink()
+            zoomView?.stop()
+            zoomView?.isHidden = true
+        }
+    }
+
+    // In step with the display, so the enlarged picture doesn't judder. Same run loop mode as the
+    // timer: paused while the menu is open
+    private func startZoomDisplayLink() {
+        guard #available(macOS 14.0, *), zoomDisplayLink == nil else { return }
+        let link = view.displayLink(target: WeakTarget(self), selector: #selector(WeakTarget.tick))
+        link.add(to: .main, forMode: .default)
+        zoomDisplayLink = link
+    }
+
+    private func stopZoomDisplayLink() {
+        if #available(macOS 14.0, *) {
+            (zoomDisplayLink as? CADisplayLink)?.invalidate()
+        }
+        zoomDisplayLink = nil
+    }
+
+    fileprivate func zoomDisplayLinkFired() {
+        guard zoomIsOn else { return }
+        let location = NSEvent.mouseLocation
+        updateZoom(at: location)
+        if mouseIsOn {
+            updateMouseHighlight(at: location)
+        }
+    }
+
     func clearDrawing() {
         isDrawingActive = false
         drawView?.clearAll()
@@ -674,4 +761,11 @@ class ViewController: NSViewController {
         guard mouseTrackingTimer == nil else { return }
         startMouseTracking()
     }
+}
+
+// The display link keeps its target alive; this keeps only a weak reference to the controller
+private final class WeakTarget: NSObject {
+    private weak var controller: ViewController?
+    init(_ controller: ViewController) { self.controller = controller }
+    @objc func tick() { controller?.zoomDisplayLinkFired() }
 }

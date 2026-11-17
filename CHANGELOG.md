@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Zoom (`⌃⌥⌘Z`): a round lens that follows the pointer and enlarges what's under it. Diameter and magnification
+  are adjustable in Settings. Zoom needs the Screen Recording permission, which macOS asks for the first time.
+
 ## [1.2.1] - 2026-11-05
 
 ### Fixed
