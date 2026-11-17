@@ -80,6 +80,8 @@ The app runs on both Apple silicon and Intel Macs. To update later, use **Check 
    Your team ID is shown in Xcode under **Settings → Accounts**, or at
    [developer.apple.com/account](https://developer.apple.com/account).
 3. Open `DaemonStraight.xcodeproj` in Xcode and press **⌘R** to build and run.
+   The Debug build is called **DaemonStraight Debug** and has its own bundle ID (`me.shatalov.DaemonStraight.debug`),
+   so its permissions and settings are separate from an installed release.
 
 To produce a standalone universal release build in `build/Release/`, run:
 
@@ -90,7 +92,8 @@ To produce a standalone universal release build in `build/Release/`, run:
 ### Granting Accessibility access
 
 On first launch, macOS asks you to allow DaemonStraight to control your computer. Open
-**System Settings → Privacy & Security → Accessibility** and enable **DaemonStraight**, then restart the app.
+**System Settings → Privacy & Security → Accessibility** and enable **DaemonStraight**. The app starts working within
+a second, without a restart. Until then, the menu bar menu shows **Allow Accessibility Access…**, which opens that setting.
 
 > [!NOTE]
 > macOS ties this permission to the app's code signature. If you rebuild the app with a different (or ad-hoc)

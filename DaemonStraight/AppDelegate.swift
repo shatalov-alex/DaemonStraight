@@ -19,6 +19,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var zoomItem: NSMenuItem!
     private var allFeaturesItem: NSMenuItem!
     private var updatesItem: NSMenuItem!
+    private var accessibilityItem: NSMenuItem!
+    private var accessibilityTimer: Timer?
+    // The last other app that was active: focus goes back to it if this app gets activated for nothing
+    private var previousApp: NSRunningApplication?
+    // Set right before this app activates itself to show a window
+    private var activatingForWindow = false
     // One click-through overlay per display; each controller draws its own part of the screen
     private var overlays: [(window: NSWindow, controller: ViewController)] = []
     private var settingsWindowController: SettingsWindowController?
@@ -34,12 +40,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         NSLog("🚀 [AppDelegate] Application starting...")
 
-        // Request accessibility permissions
-        requestAccessibilityPermissions()
-
         // Setup menu bar
         setupMenuBar()
         NSLog("✅ [AppDelegate] Menu bar setup complete")
+
+        // Request accessibility permissions
+        checkAccessibilityPermissions()
+
+        // Give the focus back if the app gets activated without a window to show
+        setupFocusReturn()
 
         // Setup overlay windows (one per display) and rebuild them when displays change
         setupOverlayWindows()
@@ -86,31 +95,119 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // MARK: - Permissions
-    private func requestAccessibilityPermissions() {
+    // Only the system's own prompt: a window of this app would take the focus from the app the
+    // presenter is in. Until the permission is granted, the menu offers to open the setting and the
+    // app checks every second, so it starts working without a restart
+    private func checkAccessibilityPermissions() {
         NSLog("🔐 [Permissions] Checking accessibility permissions...")
 
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        let accessEnabled = AXIsProcessTrustedWithOptions(options)
-
-        if accessEnabled {
+        if AXIsProcessTrustedWithOptions(options) {
             NSLog("✅ [Permissions] Accessibility permissions GRANTED")
-        } else {
-            NSLog("⚠️  [Permissions] Accessibility permissions NOT granted")
-            NSLog("📋 [Permissions] Please grant accessibility access in System Settings")
-
-            let alert = NSAlert()
-            alert.messageText = "Accessibility Access Required"
-            alert.informativeText = "DaemonStraight needs accessibility permissions to monitor keyboard and mouse events for presentation assistance.\n\nPlease grant access in System Settings > Privacy & Security > Accessibility.\n\nWhen running from Xcode, Xcode may need to be in that list as well."
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "Open System Settings")
-            alert.addButton(withTitle: "Later")
-
-            let response = alert.runModal()
-            if response == .alertFirstButtonReturn {
-                NSLog("🔓 [Permissions] Opening System Settings...")
-                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
-            }
+            return
         }
+
+        NSLog("⚠️  [Permissions] Accessibility permissions NOT granted, waiting for them")
+        accessibilityItem.isHidden = false
+        accessibilityTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard AXIsProcessTrusted() else { return }
+            timer.invalidate()
+            self?.accessibilityGranted()
+        }
+    }
+
+    private func accessibilityGranted() {
+        NSLog("✅ [Permissions] Accessibility permissions GRANTED, restarting the event monitors")
+        accessibilityTimer = nil
+        accessibilityItem.isHidden = true
+        // Monitors added without the permission may stay deaf, so add them again
+        setupGlobalKeyboardShortcuts()
+        screensChanged()
+    }
+
+    @objc private func openAccessibilitySettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    // MARK: - Focus
+    // Opening the app from Shortcuts or Spotlight activates it although it has nothing to show. An active
+    // app without a window gets the key presses: macOS beeps, and the global monitors (which only see
+    // other apps' events) miss them. So the focus goes straight back to the app the presenter was in
+    private func setupFocusReturn() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
+            MainActor.assumeIsolated { self?.previousApp = app }
+        }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applicationBecameActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowWillClose),
+            name: NSWindow.willCloseNotification,
+            object: nil
+        )
+        // Opened from Shortcuts, the app may be active already
+        DispatchQueue.main.async { [weak self] in
+            if NSApp.isActive { self?.applicationBecameActive() }
+        }
+    }
+
+    @objc private func applicationBecameActive() {
+        if activatingForWindow {
+            activatingForWindow = false
+            return
+        }
+        returnFocusIfNoWindow()
+    }
+
+    // Also when the last window of this app (Settings, an alert) closes
+    @objc private func windowWillClose(_ notification: Notification) {
+        guard !(notification.object is TransparentOverlayWindow) else { return }
+        returnFocusIfNoWindow()
+    }
+
+    private func returnFocusIfNoWindow() {
+        // Let a window that is being opened or closed settle first
+        DispatchQueue.main.async { [weak self] in
+            guard let self, NSApp.isActive, NSApp.modalWindow == nil else { return }
+            let showsWindow = NSApp.windows.contains {
+                !($0 is TransparentOverlayWindow) && $0.isVisible && $0.canBecomeKey
+            }
+            guard !showsWindow else { return }
+            self.returnFocus()
+        }
+    }
+
+    private func returnFocus() {
+        if let app = previousApp, !app.isTerminated {
+            NSLog("↩️  [Focus] Activated without a window, returning the focus to the previous app")
+            if #available(macOS 14.0, *) {
+                NSApp.yieldActivation(to: app)
+                app.activate()
+            } else {
+                app.activate(options: [])
+            }
+        } else {
+            NSLog("↩️  [Focus] Activated without a window, hiding")
+            NSApp.hide(nil)  // the next app gets the focus; the overlays can't hide
+        }
+    }
+
+    // For this app's own windows (Settings, alerts, updates)
+    private func activateForWindow() {
+        if !NSApp.isActive {
+            activatingForWindow = true
+        }
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     // MARK: - Updates
@@ -134,8 +231,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         alert.addButton(withTitle: "Check at Start")
         alert.addButton(withTitle: "Don't Check")
 
-        NSApp.activate(ignoringOtherApps: true)
+        activateForWindow()
         settings.checkForUpdatesAtLaunch = alert.runModal() == .alertFirstButtonReturn
+        returnFocusIfNoWindow()
     }
 
     // A quiet hint in the menu bar: an update window must not appear during a presentation
@@ -147,6 +245,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func checkForUpdates() {
+        activateForWindow()
         updateManager.checkForUpdates()
     }
 
@@ -169,6 +268,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let headerItem = NSMenuItem(title: "DaemonStraight", action: nil, keyEquivalent: "")
         headerItem.isEnabled = false
         menu.addItem(headerItem)
+
+        // Shown only while the Accessibility permission is missing
+        accessibilityItem = NSMenuItem(title: "Allow Accessibility Access...", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+        accessibilityItem.target = self
+        accessibilityItem.isHidden = true
+        menu.addItem(accessibilityItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -260,6 +365,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = true  // Always click-through
         window.acceptsMouseMovedEvents = true
+        window.canHide = false  // stays visible when the app hides to give the focus back
         window.alphaValue = 1.0  // Keep fully visible
 
         // Create view controller with screen size
@@ -306,24 +412,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func setupGlobalKeyboardShortcuts() {
         NSLog("⌨️  [Shortcuts] Setting up global keyboard shortcut monitoring...")
 
-        // Local monitor - captures events for this app
+        [localHotkeyMonitor, globalHotkeyMonitor].compactMap { $0 }.forEach { NSEvent.removeMonitor($0) }
+
+        // Local monitor - captures events for this app. A hotkey is used up here: passed on, it would
+        // make macOS beep when no window takes it
         localHotkeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleHotkeyEvent(event)
-            return event
+            (self?.handleHotkeyEvent(event) ?? false) ? nil : event
         }
 
         // Global monitor - captures ALL system events (requires accessibility permissions)
         globalHotkeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleHotkeyEvent(event)
+            _ = self?.handleHotkeyEvent(event)
         }
 
         NSLog("✅ [Shortcuts] Global keyboard shortcut monitoring active")
         NSLog("🎯 [Shortcuts] Listening for system-wide keyboard events...")
     }
 
-    private func handleHotkeyEvent(_ event: NSEvent) {
+    // Returns whether the event was one of the hotkeys
+    private func handleHotkeyEvent(_ event: NSEvent) -> Bool {
         // Don't toggle modes while a new hotkey is being recorded in Settings
-        guard !HotkeyRecorderView.isRecordingAny else { return }
+        guard !HotkeyRecorderView.isRecordingAny else { return false }
 
         let modifiers = event.modifierFlags.intersection([.control, .option, .command, .shift])
         let keyCode = event.keyCode
@@ -348,7 +457,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             toggleZoom()
         } else if keyCode == allHotkey.keyCode && modifiers.rawValue == allHotkey.modifiers {
             toggleAllFeatures()
+        } else {
+            return false
         }
+        return true
     }
 
     // MARK: - Menu Actions
@@ -434,7 +546,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             settingsWindowController = SettingsWindowController()
         }
         // Menu bar (accessory) app: activate so the window comes to front and receives key presses
-        NSApp.activate(ignoringOtherApps: true)
+        activateForWindow()
         settingsWindowController?.showWindow(self)
         settingsWindowController?.window?.makeKeyAndOrderFront(self)
     }
