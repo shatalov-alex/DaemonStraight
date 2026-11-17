@@ -29,7 +29,7 @@
 - **Spotlight.** Dims the screen except a soft circle around the pointer, so the audience looks exactly where you point.
 - **Zoom.** A round lens follows the pointer and enlarges what's under it, so small text and details are readable
   in a shared screen.
-- **On-screen drawing.** Hold `⇧` and move the mouse to draw freehand, or hold `⌃⇧` for straight lines. Drawings fade
+- **On-screen drawing.** Hold `⇧` and move the mouse to draw freehand, hold `⌃⇧` for straight lines, or `⇧⌘` for arrows. Drawings fade
   out automatically shortly after you release the keys.
 - **Click-through overlay.** The overlay never takes focus or intercepts clicks, so you keep working normally.
 - **Multiple displays.** Works on every connected display, and adapts when displays are connected, disconnected
@@ -135,11 +135,14 @@ While drawing mode is on:
 | -------------------------- | --------------------------------------- |
 | Freehand line              | Hold `⇧` and move the mouse             |
 | Straight line              | Hold `⌃⇧` and move the mouse            |
-| Switch line type mid-stroke | Press or release `⌃` while holding `⇧` |
+| Arrow                      | Hold `⇧⌘` and move the mouse            |
+| Switch line type mid-stroke | Press or release `⌃` or `⌘` while holding `⇧` |
 | Keep drawings on screen    | Hold `⌘`, `⌥`, `⌃` or Caps Lock         |
 | Clear immediately          | Menu bar → **Clear Drawing**            |
+| Undo the last stroke       | `⌃⌥⌘U` or menu bar → **Undo Last Stroke** |
 
-Drawings fade out three seconds after you release `⇧`.
+Drawings fade out three seconds after you release `⇧`. With Caps Lock on they stay, including new ones, until you
+turn Caps Lock off.
 
 ### Settings
 
@@ -149,7 +152,7 @@ Open **Settings…** from the menu bar icon (or press `⌘,` while the menu is o
   zoom lens diameter and magnification
 - **Keyboard:** which keys the shortcut display shows (modifiers, function keys, special keys, clicks with modifiers
   and, optionally, plain typing), the screen corner and the key size
-- **Drawing:** line color and width
+- **Drawing:** line color and width, and the undo hotkey
 - **General:** the toggle hotkeys (each must include at least one of `⌃`, `⌥` or `⌘`), the features that turn on at launch
   and whether to check for updates when the app starts
 

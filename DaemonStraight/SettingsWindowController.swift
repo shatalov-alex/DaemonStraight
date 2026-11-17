@@ -54,6 +54,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var spotlightHotkeyRecorder: HotkeyRecorderView!
     private var zoomHotkeyRecorder: HotkeyRecorderView!
     private var allHotkeyRecorder: HotkeyRecorderView!
+    private var undoHotkeyRecorder: HotkeyRecorderView!
 
     // Launch controls
     private var launchMouseCheckbox: NSButton!
@@ -211,6 +212,19 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         yPosition -= 30
 
         (drawingWidthSlider, drawingWidthLabel) = addSliderRow("Line Width:", to: view, y: yPosition, min: 1, max: 15)
+        yPosition -= 35
+
+        undoHotkeyRecorder = addHotkeyRow("Undo Last Stroke:", to: view, y: yPosition)
+        yPosition -= 40
+
+        let hint = NSTextField(wrappingLabelWithString: """
+            Hold ⇧ and move the mouse to draw. Add ⌃ for a straight line or ⌘ for an arrow; \
+            they can be switched in the middle of a stroke.
+            Drawings fade 3 seconds after ⇧ is released. Holding ⌘, ⌥ or ⌃, or turning on Caps Lock, keeps them.
+            """)
+        hint.frame = NSRect(x: 30, y: yPosition - 50, width: 500, height: 70)
+        hint.textColor = .secondaryLabelColor
+        view.addSubview(hint)
     }
 
     // MARK: - General Tab
@@ -354,6 +368,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         spotlightHotkeyRecorder.hotkey = settings.spotlightToggleHotkey
         zoomHotkeyRecorder.hotkey = settings.zoomToggleHotkey
         allHotkeyRecorder.hotkey = settings.allToggleHotkey
+        undoHotkeyRecorder.hotkey = settings.undoDrawingHotkey
 
         // Launch
         launchMouseCheckbox.state = settings.launchWithMouse ? .on : .off
@@ -435,7 +450,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     private var hotkeyRecorders: [HotkeyRecorderView] {
         [mouseHotkeyRecorder, keyboardHotkeyRecorder, drawingHotkeyRecorder, spotlightHotkeyRecorder, zoomHotkeyRecorder,
-         allHotkeyRecorder]
+         allHotkeyRecorder, undoHotkeyRecorder]
     }
 
     private func saveHotkeys() {
@@ -445,6 +460,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         settings.spotlightToggleHotkey = spotlightHotkeyRecorder.hotkey
         settings.zoomToggleHotkey = zoomHotkeyRecorder.hotkey
         settings.allToggleHotkey = allHotkeyRecorder.hotkey
+        settings.undoDrawingHotkey = undoHotkeyRecorder.hotkey
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }
 

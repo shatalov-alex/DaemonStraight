@@ -59,6 +59,7 @@ class SettingsManager {
         static let spotlightToggleHotkey = "spotlightToggleHotkey"
         static let zoomToggleHotkey = "zoomToggleHotkey"
         static let allToggleHotkey = "allToggleHotkey"
+        static let undoDrawingHotkey = "undoDrawingHotkey"
     }
 
     // Screen corner where pressed shortcuts are shown
@@ -361,6 +362,12 @@ class SettingsManager {
     }
 
     // MARK: - Helper Methods
+    // ⌃⌥⌘U
+    var undoDrawingHotkey: Hotkey {
+        get { hotkey(forKey: Keys.undoDrawingHotkey) ?? Hotkey(keyCode: 32, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.undoDrawingHotkey) }
+    }
+
     private func hotkey(forKey key: String) -> Hotkey? {
         guard let data = defaults.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(Hotkey.self, from: data)
@@ -402,6 +409,7 @@ class SettingsManager {
         defaults.removeObject(forKey: Keys.spotlightToggleHotkey)
         defaults.removeObject(forKey: Keys.zoomToggleHotkey)
         defaults.removeObject(forKey: Keys.allToggleHotkey)
+        defaults.removeObject(forKey: Keys.undoDrawingHotkey)
         defaults.removeObject(forKey: Keys.showModifierClicks)
         defaults.removeObject(forKey: Keys.shortcutPosition)
         defaults.removeObject(forKey: Keys.shortcutKeySize)
