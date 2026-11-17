@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Opening the app from Shortcuts or Spotlight no longer takes the focus from the app you're in. Before, key presses
+  then went to DaemonStraight: macOS beeped, and drawing and the shortcut display didn't react until you clicked
+  somewhere. The focus also goes back after you close Settings.
+- Hotkeys no longer make macOS beep when DaemonStraight is the active app.
+- Without the Accessibility permission, the app no longer shows its own alert at launch (it took the focus). The menu
+  shows **Allow Accessibility Access…** instead, and the app starts working as soon as access is granted, without a restart.
+
+### Changed
+
+- The Debug build has its own bundle ID, so running it doesn't affect the permissions of an installed release.
+
 ## [1.3.0] - 2026-11-17
 
 ### Added

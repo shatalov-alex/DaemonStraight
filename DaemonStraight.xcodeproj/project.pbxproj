@@ -283,7 +283,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DaemonStraight/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = DaemonStraight;
+				INFOPLIST_KEY_CFBundleDisplayName = "DaemonStraight Debug";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -295,7 +295,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				MARKETING_VERSION = 1.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = me.shatalov.DaemonStraight;
+				PRODUCT_BUNDLE_IDENTIFIER = me.shatalov.DaemonStraight.debug;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
