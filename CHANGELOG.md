@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Arrows: hold `⇧⌘` and move the mouse while drawing mode is on. Like straight lines, they can be switched to and from
   in the middle of a stroke.
 - Undo the last stroke with `⌃⌥⌘U` (can be changed in Settings › Drawing) or from the menu.
+- Shortcuts actions: **Turn DaemonStraight Feature On or Off** (any feature or all of them; on, off or toggle) and
+  **Clear DaemonStraight Drawing**.
 - The cursor ring fades in and out when mouse highlighting is turned on or off.
 - **Animation Durations** in Settings (the triangle at the bottom of the window): the mouse click animation, the ring
   fade, how long keycaps stay and slide, and how long drawings stay and fade. The defaults are the previous durations.

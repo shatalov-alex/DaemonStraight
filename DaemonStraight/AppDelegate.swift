@@ -548,6 +548,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         overlays.forEach { $0.controller.clearDrawing() }
     }
 
+    // MARK: - Shortcuts actions
+    /// Turns a feature on (true), off (false) or over (nil), the same way as its hotkey
+    func setFeature(_ feature: ShortcutsFeature, on: Bool?) {
+        guard let controller = overlays.first?.controller else { return }
+        switch feature {
+        case .mouse:
+            if on != controller.mouseIsOn { toggleMouseHighlight() }
+        case .keyboard:
+            if on != controller.shortcutsCatchIsOn { toggleKeyboardDisplay() }
+        case .drawing:
+            if on != controller.drawingIsOn { toggleDrawingMode() }
+        case .spotlight:
+            if on != controller.spotlightIsOn { toggleSpotlight() }
+        case .zoom:
+            if on != controller.zoomIsOn { toggleZoom() }
+        case .all:
+            switch on {
+            case nil:
+                toggleAllFeatures()
+            case true:
+                setFeatures(mouse: true, keyboard: true, drawing: true, spotlight: true)
+            case false:
+                if anyFeatureIsOn { toggleAllFeatures() }
+            }
+        }
+    }
+
+    func clearDrawingFromShortcut() {
+        clearDrawing()
+    }
+
     @objc private func undoLastStroke() {
         overlays.forEach { $0.controller.undoLastStroke() }
     }

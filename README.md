@@ -127,6 +127,14 @@ opens DaemonStraight (with the features you need turned on at launch), joins you
 and another one that quits DaemonStraight and turns the Focus mode off. Add both to the menu bar or the Dock, and the
 whole setup is one click before and after the call.
 
+DaemonStraight also adds two actions to Shortcuts:
+
+- **Turn DaemonStraight Feature On or Off:** mouse highlighting, keyboard display, drawing mode, spotlight, zoom or all
+  features; on, off or toggle. **All Features** works like **Turn All On** / **Turn All Off** in the menu.
+- **Clear DaemonStraight Drawing**
+
+So a shortcut can open the app and turn on just the features one kind of meeting needs.
+
 ### Drawing
 
 While drawing mode is on:
