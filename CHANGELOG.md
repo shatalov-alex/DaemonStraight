@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Undo the last stroke with `⌃⌥⌘U` (can be changed in Settings › Drawing) or from the menu.
 - Shortcuts actions: **Turn DaemonStraight Feature On or Off** (any feature or all of them; on, off or toggle) and
   **Clear DaemonStraight Drawing**.
+- Hotkeys while presenting: `⌃⌥⌘=` / `⌃⌥⌘-` zoom in and out (with Zoom off, they make the spotlight larger or
+  smaller), `⌃⌥⌘]` / `⌃⌥⌘[` change the zoom lens size. The new sizes are saved.
+- Drawing color palette: `⌃⌥⌘C` shows up to 9 numbered colors (chosen in Settings › Drawing); press a number (or click
+  a color) to draw with it, Esc or `⌃⌥⌘C` closes it. The number isn't typed into the app in front. Each stroke keeps
+  its color. A setting decides whether the picked color is kept or drawing goes back to the line color when drawing
+  mode is turned off.
+- A **Hotkeys** tab in Settings with all hotkeys; hotkeys with `=`, `-`, `[`, `]` and other punctuation keys are shown
+  by name instead of `?`.
 - The cursor ring fades in and out when mouse highlighting is turned on or off.
 - **Animation Durations** in Settings (the triangle at the bottom of the window): the mouse click animation, the ring
   fade, how long keycaps stay and slide, and how long drawings stay and fade. The defaults are the previous durations.

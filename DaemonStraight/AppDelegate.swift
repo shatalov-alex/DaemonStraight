@@ -441,33 +441,94 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let modifiers = event.modifierFlags.intersection([.control, .option, .command, .shift])
         let keyCode = event.keyCode
 
-        // Check against custom hotkeys
-        let mouseHotkey = settings.mouseToggleHotkey
-        let keyboardHotkey = settings.keyboardToggleHotkey
-        let drawingHotkey = settings.drawingToggleHotkey
-        let spotlightHotkey = settings.spotlightToggleHotkey
-        let zoomHotkey = settings.zoomToggleHotkey
-        let allHotkey = settings.allToggleHotkey
-        let undoHotkey = settings.undoDrawingHotkey
-
-        if keyCode == mouseHotkey.keyCode && modifiers.rawValue == mouseHotkey.modifiers {
-            toggleMouseHighlight()
-        } else if keyCode == keyboardHotkey.keyCode && modifiers.rawValue == keyboardHotkey.modifiers {
-            toggleKeyboardDisplay()
-        } else if keyCode == drawingHotkey.keyCode && modifiers.rawValue == drawingHotkey.modifiers {
-            toggleDrawingMode()
-        } else if keyCode == spotlightHotkey.keyCode && modifiers.rawValue == spotlightHotkey.modifiers {
-            toggleSpotlight()
-        } else if keyCode == zoomHotkey.keyCode && modifiers.rawValue == zoomHotkey.modifiers {
-            toggleZoom()
-        } else if keyCode == allHotkey.keyCode && modifiers.rawValue == allHotkey.modifiers {
-            toggleAllFeatures()
-        } else if keyCode == undoHotkey.keyCode && modifiers.rawValue == undoHotkey.modifiers {
-            undoLastStroke()
-        } else {
+        let actions: [(hotkey: SettingsManager.Hotkey, action: () -> Void)] = [
+            (settings.mouseToggleHotkey, { self.toggleMouseHighlight() }),
+            (settings.keyboardToggleHotkey, { self.toggleKeyboardDisplay() }),
+            (settings.drawingToggleHotkey, { self.toggleDrawingMode() }),
+            (settings.spotlightToggleHotkey, { self.toggleSpotlight() }),
+            (settings.zoomToggleHotkey, { self.toggleZoom() }),
+            (settings.allToggleHotkey, { self.toggleAllFeatures() }),
+            (settings.undoDrawingHotkey, { self.undoLastStroke() }),
+            (settings.nextDrawingColorHotkey, { self.toggleColorPalette() }),
+            (settings.zoomInHotkey, { self.changeMagnificationOrSpotlight(by: 1) }),
+            (settings.zoomOutHotkey, { self.changeMagnificationOrSpotlight(by: -1) }),
+            (settings.lensLargerHotkey, { self.changeZoomLens(by: 1) }),
+            (settings.lensSmallerHotkey, { self.changeZoomLens(by: -1) }),
+        ]
+        guard let match = actions.first(where: { $0.hotkey.keyCode == keyCode && $0.hotkey.modifiers == modifiers.rawValue }) else {
             return false
         }
+        match.action()
         return true
+    }
+
+    // MARK: - Sizes and Color While Presenting
+    // Saved like the Settings sliders, within the same ranges
+
+    /// Zoom in or out when Zoom is on, otherwise a larger or smaller spotlight
+    private func changeMagnificationOrSpotlight(by step: CGFloat) {
+        guard let controller = overlays.first?.controller else { return }
+        if controller.zoomIsOn {
+            settings.zoomMagnification = min(max(settings.zoomMagnification + step * 0.5, 1.5), 4.0)
+        } else if controller.spotlightIsOn {
+            settings.spotlightDiameter = min(max(settings.spotlightDiameter + step * 50, 150), 800)
+        } else {
+            return
+        }
+        settingsChangedByHotkey()
+    }
+
+    private func changeZoomLens(by step: CGFloat) {
+        guard overlays.first?.controller.zoomIsOn == true else { return }
+        settings.zoomDiameter = min(max(settings.zoomDiameter + step * 50, 150), 600)
+        settingsChangedByHotkey()
+    }
+
+    private var colorPalette: ColorPalettePanel?
+
+    /// Opens the numbered palette, or closes it when it's open
+    private func toggleColorPalette() {
+        if let palette = colorPalette {
+            palette.close()
+            return
+        }
+        let colors = settings.activePaletteColors
+        let current = settings.currentDrawingColor
+        let palette = ColorPalettePanel(colors: colors, selected: colors.firstIndex { Self.isSameColor($0, current) },
+                                        near: NSEvent.mouseLocation)
+        palette.onPick = { [weak self] index in
+            guard let self, index < colors.count else { return }
+            self.setDrawingColor(colors[index])
+        }
+        palette.onClose = { [weak self, weak palette] in
+            if self?.colorPalette === palette {
+                self?.colorPalette = nil
+            }
+        }
+        colorPalette = palette
+        palette.show()
+    }
+
+    /// New strokes use this color; it becomes the Line Color only if the setting says so
+    private func setDrawingColor(_ color: NSColor) {
+        if settings.rememberDrawingColor {
+            settings.temporaryDrawingColor = nil
+            settings.drawingColor = color
+            settingsChangedByHotkey()
+        } else {
+            settings.temporaryDrawingColor = color
+        }
+    }
+
+    private static func isSameColor(_ a: NSColor, _ b: NSColor) -> Bool {
+        guard let a = a.usingColorSpace(.sRGB), let b = b.usingColorSpace(.sRGB) else { return false }
+        return abs(a.redComponent - b.redComponent) < 0.02 && abs(a.greenComponent - b.greenComponent) < 0.02
+            && abs(a.blueComponent - b.blueComponent) < 0.02
+    }
+
+    private func settingsChangedByHotkey() {
+        NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
+        settingsWindowController?.reloadSettings()
     }
 
     // MARK: - Menu Actions
@@ -635,6 +696,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         for window in overlays.map({ $0.window }) {
             maintainVisibility(of: window)
         }
+        // Same level as the overlays: keep it in front of them
+        colorPalette?.orderFrontRegardless()
     }
 
     private func maintainVisibility(of window: NSWindow) {

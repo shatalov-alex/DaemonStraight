@@ -55,6 +55,14 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var zoomHotkeyRecorder: HotkeyRecorderView!
     private var allHotkeyRecorder: HotkeyRecorderView!
     private var undoHotkeyRecorder: HotkeyRecorderView!
+    private var colorHotkeyRecorder: HotkeyRecorderView!
+    private var zoomInHotkeyRecorder: HotkeyRecorderView!
+    private var zoomOutHotkeyRecorder: HotkeyRecorderView!
+    private var lensLargerHotkeyRecorder: HotkeyRecorderView!
+    private var lensSmallerHotkeyRecorder: HotkeyRecorderView!
+    private var rememberColorCheckbox: NSButton!
+    private var paletteCountPopup: NSPopUpButton!
+    private var paletteWells: [NSColorWell] = []
 
     // Launch controls
     private var launchMouseCheckbox: NSButton!
@@ -112,6 +120,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         tabView.addTabViewItem(createTab("Mouse", in: tabView, setup: setupMouseTab))
         tabView.addTabViewItem(createTab("Keyboard", in: tabView, setup: setupKeyboardTab))
         tabView.addTabViewItem(createTab("Drawing", in: tabView, setup: setupDrawingTab))
+        tabView.addTabViewItem(createTab("Hotkeys", in: tabView, setup: setupHotkeysTab))
         tabView.addTabViewItem(createTab("General", in: tabView, setup: setupGeneralTab))
 
         // MARK: - Buttons
@@ -251,9 +260,40 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         yPosition -= 30
 
         (drawingWidthSlider, drawingWidthLabel) = addSliderRow("Line Width:", to: view, y: yPosition, min: 1, max: 15)
-        yPosition -= 35
+        yPosition -= 34
 
-        undoHotkeyRecorder = addHotkeyRow("Undo Last Stroke:", to: view, y: yPosition)
+        view.addSubview(createLabel("Palette:", frame: NSRect(x: 30, y: yPosition, width: 120, height: 20)))
+        paletteCountPopup = NSPopUpButton(frame: NSRect(x: 158, y: yPosition - 3, width: 110, height: 26))
+        paletteCountPopup.addItems(withTitles: (1...SettingsManager.maxPaletteColors).map { $0 == 1 ? "1 color" : "\($0) colors" })
+        paletteCountPopup.target = self
+        paletteCountPopup.action = #selector(paletteChanged)
+        view.addSubview(paletteCountPopup)
+        yPosition -= 32
+
+        for index in 0..<SettingsManager.maxPaletteColors {
+            let well = NSColorWell(frame: NSRect(x: 160 + CGFloat(index) * 42, y: yPosition, width: 38, height: 24))
+            well.target = self
+            well.action = #selector(paletteChanged)
+            view.addSubview(well)
+            paletteWells.append(well)
+        }
+        yPosition -= 20
+        let paletteHint = NSTextField(wrappingLabelWithString:
+            "Next Drawing Color (⌃⌥⌘C by default) shows these colors numbered; press a number to pick one, Esc to close.")
+        paletteHint.frame = NSRect(x: 160, y: yPosition - 18, width: 380, height: 34)
+        paletteHint.textColor = .secondaryLabelColor
+        view.addSubview(paletteHint)
+        yPosition -= 44
+
+        rememberColorCheckbox = createCheckbox("Keep the color picked from the palette",
+                                               frame: NSRect(x: 30, y: yPosition, width: 500, height: 20))
+        view.addSubview(rememberColorCheckbox)
+        yPosition -= 22
+        let colorHint = NSTextField(wrappingLabelWithString:
+            "When off, drawing goes back to the Line Color when drawing mode is turned off.")
+        colorHint.frame = NSRect(x: 50, y: yPosition - 16, width: 480, height: 34)
+        colorHint.textColor = .secondaryLabelColor
+        view.addSubview(colorHint)
         yPosition -= 40
 
         let hint = NSTextField(wrappingLabelWithString: """
@@ -261,8 +301,9 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
             they can be switched in the middle of a stroke.
             Drawings fade a few seconds after ⇧ is released (see Animation Durations below). Holding ⌘, ⌥ or ⌃, \
             or turning on Caps Lock, keeps them.
+            Hotkeys for undo and the drawing color are in the Hotkeys tab.
             """)
-        hint.frame = NSRect(x: 30, y: yPosition - 50, width: 500, height: 70)
+        hint.frame = NSRect(x: 30, y: yPosition - 70, width: 500, height: 90)
         hint.textColor = .secondaryLabelColor
         view.addSubview(hint)
     }
@@ -330,25 +371,45 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         String(format: step < 0.1 ? "%.2f s" : "%.1f s", value)
     }
 
+    // MARK: - Hotkeys Tab
+    private func setupHotkeysTab(_ view: NSView, _ top: CGFloat) {
+        var yPosition = top
+
+        view.addSubview(createSectionLabel("Toggle Features", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        mouseHotkeyRecorder = addHotkeyRow("Mouse Highlighting:", to: view, y: yPosition)
+        yPosition -= 30
+        keyboardHotkeyRecorder = addHotkeyRow("Keyboard Display:", to: view, y: yPosition)
+        yPosition -= 30
+        drawingHotkeyRecorder = addHotkeyRow("Drawing Mode:", to: view, y: yPosition)
+        yPosition -= 30
+        spotlightHotkeyRecorder = addHotkeyRow("Spotlight:", to: view, y: yPosition)
+        yPosition -= 30
+        zoomHotkeyRecorder = addHotkeyRow("Zoom:", to: view, y: yPosition)
+        yPosition -= 30
+        allHotkeyRecorder = addHotkeyRow("All Features:", to: view, y: yPosition)
+        yPosition -= 38
+
+        view.addSubview(createSectionLabel("While Presenting", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        undoHotkeyRecorder = addHotkeyRow("Undo Last Stroke:", to: view, y: yPosition)
+        yPosition -= 30
+        colorHotkeyRecorder = addHotkeyRow("Next Drawing Color:", to: view, y: yPosition)
+        yPosition -= 30
+        zoomInHotkeyRecorder = addHotkeyRow("Zoom In / Spotlight +:", to: view, y: yPosition)
+        yPosition -= 30
+        zoomOutHotkeyRecorder = addHotkeyRow("Zoom Out / Spotlight −:", to: view, y: yPosition)
+        yPosition -= 30
+        lensLargerHotkeyRecorder = addHotkeyRow("Larger Zoom Lens:", to: view, y: yPosition)
+        yPosition -= 30
+        lensSmallerHotkeyRecorder = addHotkeyRow("Smaller Zoom Lens:", to: view, y: yPosition)
+    }
+
     // MARK: - General Tab
     private func setupGeneralTab(_ view: NSView, _ top: CGFloat) {
         var yPosition = top
-
-        view.addSubview(createSectionLabel("Hotkeys", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
-        yPosition -= 30
-
-        mouseHotkeyRecorder = addHotkeyRow("Toggle Mouse:", to: view, y: yPosition)
-        yPosition -= 35
-        keyboardHotkeyRecorder = addHotkeyRow("Toggle Keyboard:", to: view, y: yPosition)
-        yPosition -= 35
-        drawingHotkeyRecorder = addHotkeyRow("Toggle Drawing:", to: view, y: yPosition)
-        yPosition -= 35
-        spotlightHotkeyRecorder = addHotkeyRow("Toggle Spotlight:", to: view, y: yPosition)
-        yPosition -= 35
-        zoomHotkeyRecorder = addHotkeyRow("Toggle Zoom:", to: view, y: yPosition)
-        yPosition -= 35
-        allHotkeyRecorder = addHotkeyRow("Toggle All:", to: view, y: yPosition)
-        yPosition -= 45
 
         view.addSubview(createSectionLabel("At Launch", frame: NSRect(x: 20, y: yPosition, width: 520, height: 24)))
         yPosition -= 30
@@ -399,8 +460,8 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func addHotkeyRow(_ title: String, to view: NSView, y: CGFloat) -> HotkeyRecorderView {
-        view.addSubview(createLabel(title, frame: NSRect(x: 30, y: y, width: 120, height: 20)))
-        let recorder = HotkeyRecorderView(frame: NSRect(x: 160, y: y - 4, width: 200, height: 28))
+        view.addSubview(createLabel(title, frame: NSRect(x: 20, y: y, width: 180, height: 20)))
+        let recorder = HotkeyRecorderView(frame: NSRect(x: 210, y: y - 4, width: 220, height: 28))
         recorder.onChange = { [weak self] in self?.saveHotkeys() }
         view.addSubview(recorder)
         return recorder
@@ -433,6 +494,11 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         checkbox.target = self
         checkbox.action = #selector(checkboxChanged)
         return checkbox
+    }
+
+    /// Values changed elsewhere (sizes and color by hotkey) - show them if the window is open
+    func reloadSettings() {
+        loadSettings()
     }
 
     private func loadSettings() {
@@ -472,6 +538,13 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         zoomHotkeyRecorder.hotkey = settings.zoomToggleHotkey
         allHotkeyRecorder.hotkey = settings.allToggleHotkey
         undoHotkeyRecorder.hotkey = settings.undoDrawingHotkey
+        colorHotkeyRecorder.hotkey = settings.nextDrawingColorHotkey
+        zoomInHotkeyRecorder.hotkey = settings.zoomInHotkey
+        zoomOutHotkeyRecorder.hotkey = settings.zoomOutHotkey
+        lensLargerHotkeyRecorder.hotkey = settings.lensLargerHotkey
+        lensSmallerHotkeyRecorder.hotkey = settings.lensSmallerHotkey
+        rememberColorCheckbox.state = settings.rememberDrawingColor ? .on : .off
+        loadPalette()
 
         // Launch
         launchMouseCheckbox.state = settings.launchWithMouse ? .on : .off
@@ -493,6 +566,20 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         zoomMagnificationLabel.stringValue = String(format: "%.1f×", settings.zoomMagnification)
         drawingWidthLabel.stringValue = "\(Int(settings.drawingWidth))"
         keySizeLabel.stringValue = "\(Int(settings.shortcutKeySize))"
+    }
+
+    private func loadPalette() {
+        paletteCountPopup.selectItem(at: settings.paletteColorCount - 1)
+        for (index, (well, color)) in zip(paletteWells, settings.paletteColors).enumerated() {
+            well.color = color
+            well.isEnabled = index < settings.paletteColorCount
+        }
+    }
+
+    @objc private func paletteChanged() {
+        settings.paletteColorCount = paletteCountPopup.indexOfSelectedItem + 1
+        settings.paletteColors = paletteWells.map(\.color)
+        loadPalette()
     }
 
     @objc private func colorChanged() {
@@ -529,6 +616,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         settings.launchWithDrawing = launchDrawingCheckbox.state == .on
         settings.launchWithSpotlight = launchSpotlightCheckbox.state == .on
         settings.checkForUpdatesAtLaunch = checkForUpdatesCheckbox.state == .on
+        settings.rememberDrawingColor = rememberColorCheckbox.state == .on
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }
 
@@ -554,7 +642,8 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     private var hotkeyRecorders: [HotkeyRecorderView] {
         [mouseHotkeyRecorder, keyboardHotkeyRecorder, drawingHotkeyRecorder, spotlightHotkeyRecorder, zoomHotkeyRecorder,
-         allHotkeyRecorder, undoHotkeyRecorder]
+         allHotkeyRecorder, undoHotkeyRecorder, colorHotkeyRecorder, zoomInHotkeyRecorder, zoomOutHotkeyRecorder,
+         lensLargerHotkeyRecorder, lensSmallerHotkeyRecorder]
     }
 
     private func saveHotkeys() {
@@ -565,6 +654,11 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         settings.zoomToggleHotkey = zoomHotkeyRecorder.hotkey
         settings.allToggleHotkey = allHotkeyRecorder.hotkey
         settings.undoDrawingHotkey = undoHotkeyRecorder.hotkey
+        settings.nextDrawingColorHotkey = colorHotkeyRecorder.hotkey
+        settings.zoomInHotkey = zoomInHotkeyRecorder.hotkey
+        settings.zoomOutHotkey = zoomOutHotkeyRecorder.hotkey
+        settings.lensLargerHotkey = lensLargerHotkeyRecorder.hotkey
+        settings.lensSmallerHotkey = lensSmallerHotkeyRecorder.hotkey
         NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
     }
 

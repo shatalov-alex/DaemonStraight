@@ -664,6 +664,7 @@ class ViewController: NSViewController {
         if !drawingIsOn {
             // Cancel any active drawing and clear all paths
             isDrawingActive = false
+            settings.temporaryDrawingColor = nil
             drawView?.clearAll()
         }
     }
