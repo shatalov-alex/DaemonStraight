@@ -38,12 +38,29 @@
 - **Updates in the app.** Check for new versions from the menu, or at every start if you allow it. An update found at
   start only changes the menu bar icon, so no window appears in the middle of a presentation.
 - **Customizable.** Colors, sizes, which keys to display, where to show them, the toggle hotkeys and the features that turn
-  on at launch can all be changed in Settings.
+  on at launch can all be changed in Settings, as well as the drawing color palette and the animation durations.
+
+### See it in action
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/feature-mouse.gif" width="420" alt="Cursor highlighting with left and right clicks"><br>Cursor highlighting and clicks</td>
+    <td align="center"><img src="docs/images/feature-keyboard.gif" width="420" alt="Shortcut keycaps"><br>Shortcut display</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/feature-drawing.gif" width="420" alt="Freehand, line and arrow drawing with the color palette"><br>Drawing: freehand, line, arrow and the color palette</td>
+    <td align="center"><img src="docs/images/feature-zoom.gif" width="420" alt="Zoom lens"><br>Zoom</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/feature-spotlight.gif" width="420" alt="Spotlight"><br>Spotlight</td>
+    <td></td>
+  </tr>
+</table>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/settings-dark.png">
-    <img src="docs/images/settings-light.png" width="480" alt="Settings window">
+    <img src="docs/images/settings-light.png" width="860" alt="Settings window: Mouse, Keyboard, Drawing, Hotkeys and General tabs, and Animation Durations">
   </picture>
 </p>
 

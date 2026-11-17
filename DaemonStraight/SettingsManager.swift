@@ -247,7 +247,7 @@ class SettingsManager {
 
             // Convert keyCode to character
             let key = keyCodeToString(keyCode)
-            parts.append(key.uppercased())
+            parts.append(key.count == 1 ? key.uppercased() : key)
 
             return parts.joined()
         }
@@ -313,6 +313,40 @@ class SettingsManager {
             case 44: return "/"
             case 47: return "."
             case 50: return "`"
+            case 36: return "↩"
+            case 48: return "⇥"
+            case 49: return "Space"
+            case 51: return "⌫"
+            case 117: return "⌦"
+            case 115: return "↖"
+            case 119: return "↘"
+            case 116: return "⇞"
+            case 121: return "⇟"
+            case 105: return "F13"
+            case 107: return "F14"
+            case 113: return "F15"
+            case 106: return "F16"
+            case 64: return "F17"
+            case 79: return "F18"
+            case 80: return "F19"
+            case 90: return "F20"
+            case 65: return "Keypad ."
+            case 67: return "Keypad *"
+            case 69: return "Keypad +"
+            case 75: return "Keypad /"
+            case 76: return "Keypad ↩"
+            case 78: return "Keypad -"
+            case 81: return "Keypad ="
+            case 82: return "Keypad 0"
+            case 83: return "Keypad 1"
+            case 84: return "Keypad 2"
+            case 85: return "Keypad 3"
+            case 86: return "Keypad 4"
+            case 87: return "Keypad 5"
+            case 88: return "Keypad 6"
+            case 89: return "Keypad 7"
+            case 91: return "Keypad 8"
+            case 92: return "Keypad 9"
             case 123: return "←"
             case 124: return "→"
             case 125: return "↓"
