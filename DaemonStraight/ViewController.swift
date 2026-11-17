@@ -231,15 +231,7 @@ class ViewController: NSViewController {
 
         // Update drawing if shift is pressed and drawing mode is enabled
         if drawingIsOn && isDrawingActive && isShiftPressed {
-            let viewPoint = convertScreenToView(location)
-
-            if isControlPressed {
-                // Update straight line endpoint
-                drawView?.updateStraightLineEndpoint(to: viewPoint)
-            } else {
-                // Continue freehand drawing
-                drawView?.continueFreehandDrawing(to: viewPoint)
-            }
+            drawView?.continueStroke(to: convertScreenToView(location))
         }
     }
 
@@ -481,54 +473,49 @@ class ViewController: NSViewController {
         }
     }
 
+    // ⇧ draws freehand, ⌃⇧ a straight line, ⇧⌘ an arrow
+    private var strokeKind: DrawView.StrokeKind {
+        if isCommandPressed { return .arrow }
+        if isControlPressed { return .line }
+        return .freehand
+    }
+
+    // ⌘, ⌥, ⌃ or Caps Lock keep the drawings on screen
+    private var isHoldingDrawings: Bool {
+        isCommandPressed || isOptionPressed || isControlPressed || isCapsLockPressed
+    }
+
     private func handleDrawingModifierChanges(wasShift: Bool, wasControl: Bool, wasCommand: Bool, wasOption: Bool, wasCapsLock: Bool) {
-        // Detect shift press/release for drawing
+        let viewPoint = convertScreenToView(NSEvent.mouseLocation)
+
         if isShiftPressed && !wasShift {
             // Shift just pressed - start drawing at current mouse position
-            let mouseLocation = NSEvent.mouseLocation
-            let viewPoint = convertScreenToView(mouseLocation)
-
-            if isControlPressed {
-                // ctrl+shift → straight line mode
-                drawView?.startStraightLineDrawing(at: viewPoint)
-                isDrawingActive = true
-            } else {
-                // shift only → freehand mode
-                drawView?.startFreehandDrawing(at: viewPoint)
-                isDrawingActive = true
-            }
+            drawView?.startStroke(strokeKind, at: viewPoint)
+            isDrawingActive = true
         } else if !isShiftPressed && wasShift {
-            // Shift just released - finish drawing and start countdown
+            // Shift just released - finish drawing and start countdown, unless the drawings are held
+            // (Caps Lock stays on while the next strokes are drawn: they must stay too)
             if isDrawingActive {
                 drawView?.finishDrawing()
                 isDrawingActive = false
+                if isHoldingDrawings {
+                    drawView?.pauseDisappearanceCountdown()
+                }
             }
-        } else if isShiftPressed && isControlPressed && !wasControl {
-            // Control pressed while shift is held - switch to straight line mode
-            if isDrawingActive {
-                let mouseLocation = NSEvent.mouseLocation
-                let viewPoint = convertScreenToView(mouseLocation)
-                drawView?.switchToStraightLineMode(at: viewPoint)
-            }
-        } else if isShiftPressed && !isControlPressed && wasControl {
-            // Control released while shift is held - switch to freehand mode
-            if isDrawingActive {
-                let mouseLocation = NSEvent.mouseLocation
-                let viewPoint = convertScreenToView(mouseLocation)
-                drawView?.switchToFreehandMode(at: viewPoint)
-            }
+            return
+        } else if isShiftPressed && isDrawingActive {
+            // A modifier pressed or released while shift is held - line, arrow or freehand from here on
+            drawView?.switchStroke(to: strokeKind, at: viewPoint)
         }
 
         // Handle countdown pause/resume based on ALL modifier keys (command, option, control, caps lock)
         if !isDrawingActive {
             // Only manage countdown when not actively drawing
             let hadModifier = wasCommand || wasOption || wasControl || wasCapsLock
-            let hasModifier = isCommandPressed || isOptionPressed || isControlPressed || isCapsLockPressed
-
-            if hasModifier && !hadModifier {
+            if isHoldingDrawings && !hadModifier {
                 // Modifier just pressed - pause countdown
                 drawView?.pauseDisappearanceCountdown()
-            } else if !hasModifier && hadModifier {
+            } else if !isHoldingDrawings && hadModifier {
                 // Modifier just released - resume countdown
                 drawView?.resumeDisappearanceCountdown()
             }
@@ -748,6 +735,10 @@ class ViewController: NSViewController {
     func clearDrawing() {
         isDrawingActive = false
         drawView?.clearAll()
+    }
+
+    func undoLastStroke() {
+        drawView?.undoLastStroke()
     }
 
     // MARK: - Mouse Tracking Control

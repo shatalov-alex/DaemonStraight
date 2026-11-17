@@ -311,6 +311,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clearItem.target = self
         menu.addItem(clearItem)
 
+        let undoItem = NSMenuItem(title: "Undo Last Stroke", action: #selector(undoLastStroke), keyEquivalent: "")
+        undoItem.target = self
+        menu.addItem(undoItem)
+
         menu.addItem(NSMenuItem.separator())
 
         // Settings
@@ -444,6 +448,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let spotlightHotkey = settings.spotlightToggleHotkey
         let zoomHotkey = settings.zoomToggleHotkey
         let allHotkey = settings.allToggleHotkey
+        let undoHotkey = settings.undoDrawingHotkey
 
         if keyCode == mouseHotkey.keyCode && modifiers.rawValue == mouseHotkey.modifiers {
             toggleMouseHighlight()
@@ -457,6 +462,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             toggleZoom()
         } else if keyCode == allHotkey.keyCode && modifiers.rawValue == allHotkey.modifiers {
             toggleAllFeatures()
+        } else if keyCode == undoHotkey.keyCode && modifiers.rawValue == undoHotkey.modifiers {
+            undoLastStroke()
         } else {
             return false
         }
@@ -539,6 +546,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func clearDrawing() {
         overlays.forEach { $0.controller.clearDrawing() }
+    }
+
+    @objc private func undoLastStroke() {
+        overlays.forEach { $0.controller.undoLastStroke() }
     }
 
     @objc private func openSettings() {

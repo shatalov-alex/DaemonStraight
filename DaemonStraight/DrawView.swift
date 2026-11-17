@@ -9,14 +9,21 @@ import Cocoa
 
 class DrawView: NSView {
 
+    // What the stroke draws while the mouse moves: ⇧ freehand, ⌃⇧ a straight line, ⇧⌘ an arrow.
+    // The kind can change in the middle of a stroke
+    enum StrokeKind {
+        case freehand, line, arrow
+    }
+
     // MARK: - Properties
     private let settings = SettingsManager.shared
     private var completedPaths: [NSBezierPath] = []
     private var pathTimestamps: [Date] = []
     private var currentPath: NSBezierPath?
-    private var currentPathStartPoint: CGPoint = .zero
-    private var isDrawingStraightLine: Bool = false
-    private var currentLineEndPoint: CGPoint = .zero
+    private var currentKind: StrokeKind = .freehand
+    // The straight part (line or arrow) being drawn: from where the stroke was when it started, to the mouse
+    private var segmentStart: CGPoint = .zero
+    private var segmentEnd: CGPoint = .zero
 
     private let fadeOutDuration: TimeInterval = 3.0
     private let fadeAnimationDuration: TimeInterval = 0.5
@@ -52,8 +59,8 @@ class DrawView: NSView {
 
     // MARK: - Drawing State Management
 
-    /// Start freehand drawing (shift key pressed)
-    func startFreehandDrawing(at point: CGPoint) {
+    /// Start a stroke (shift key pressed)
+    func startStroke(_ kind: StrokeKind, at point: CGPoint) {
         // Stop any active countdown and fade animation
         stopDisappearanceCountdown()
         if isFading {
@@ -62,99 +69,65 @@ class DrawView: NSView {
 
         let path = NSBezierPath()
         path.move(to: point)
-        path.lineWidth = settings.drawingWidth
-        path.lineCapStyle = .round
-        path.lineJoinStyle = .round
-
         currentPath = path
-        currentPathStartPoint = point
-        isDrawingStraightLine = false
+        currentKind = kind
+        segmentStart = point
+        segmentEnd = point
 
         needsDisplay = true
     }
 
-    /// Continue freehand drawing (shift held, mouse moving)
-    func continueFreehandDrawing(to point: CGPoint) {
-        guard let path = currentPath, !isDrawingStraightLine else { return }
+    /// Follow the mouse (shift held, mouse moving)
+    func continueStroke(to point: CGPoint) {
+        guard let path = currentPath else { return }
 
-        path.line(to: point)
+        if currentKind == .freehand {
+            path.line(to: point)
+        } else {
+            segmentEnd = point
+        }
         needsDisplay = true
     }
 
-    /// Start straight line drawing (ctrl+shift pressed)
-    func startStraightLineDrawing(at point: CGPoint) {
-        // Stop any active countdown and fade animation
-        stopDisappearanceCountdown()
-        if isFading {
-            clearAllPathsImmediately()
+    /// Change what the stroke draws from here on (a modifier pressed or released while shift is held)
+    func switchStroke(to kind: StrokeKind, at point: CGPoint) {
+        guard let path = currentPath, kind != currentKind else { return }
+
+        // The line or arrow drawn so far stays where it is
+        if currentKind != .freehand {
+            appendSegment(to: path)
+        }
+        currentKind = kind
+        segmentStart = path.currentPoint
+        segmentEnd = point
+        if kind == .freehand {
+            path.line(to: point)
         }
 
-        let path = NSBezierPath()
-        path.move(to: point)
-        path.lineWidth = settings.drawingWidth
-        path.lineCapStyle = .round
-        path.lineJoinStyle = .round
-
-        currentPath = path
-        currentPathStartPoint = point
-        currentLineEndPoint = point
-        isDrawingStraightLine = true
-
         needsDisplay = true
     }
 
-    /// Update straight line endpoint (ctrl+shift held, mouse moving)
-    func updateStraightLineEndpoint(to point: CGPoint) {
-        guard isDrawingStraightLine else { return }
-
-        currentLineEndPoint = point
-        needsDisplay = true
-    }
-
-    /// Switch existing drawing to straight line mode
-    func switchToStraightLineMode(at point: CGPoint) {
-        guard let path = currentPath, !isDrawingStraightLine else { return }
-
-        // Save the start point from the current freehand path
-        currentPathStartPoint = path.isEmpty ? point : currentPathStartPoint
-        currentLineEndPoint = point
-        isDrawingStraightLine = true
-
-        needsDisplay = true
-    }
-
-    /// Switch existing drawing to freehand mode
-    func switchToFreehandMode(at point: CGPoint) {
-        guard let path = currentPath, isDrawingStraightLine else { return }
-
-        // Finalize the straight line into the path
-        path.line(to: currentLineEndPoint)
-
-        // Continue from the endpoint as freehand
-        isDrawingStraightLine = false
-
-        needsDisplay = true
-    }
-
-    /// Finish current drawing (shift or ctrl+shift released)
+    /// Finish the stroke (shift released). A stroke without any length (shift pressed for typing,
+    /// not for drawing) is dropped
     func finishDrawing() {
         guard let path = currentPath else { return }
 
-        // If it was a straight line, finalize it
-        if isDrawingStraightLine {
-            path.line(to: currentLineEndPoint)
+        if currentKind != .freehand {
+            appendSegment(to: path)
+        }
+        currentPath = nil
+        currentKind = .freehand
+
+        if path.bounds.width >= 1 || path.bounds.height >= 1 {
+            completedPaths.append(path)
+            pathTimestamps.append(Date())
+            lastDrawingCompletedTime = Date()
         }
 
-        // Move to completed paths
-        completedPaths.append(path)
-        pathTimestamps.append(Date())
-
-        currentPath = nil
-        isDrawingStraightLine = false
-        lastDrawingCompletedTime = Date()
-
         // Start disappearance countdown
-        startDisappearanceCountdown()
+        if !completedPaths.isEmpty {
+            startDisappearanceCountdown()
+        }
 
         needsDisplay = true
     }
@@ -162,8 +135,46 @@ class DrawView: NSView {
     /// Cancel current drawing without finishing
     func cancelDrawing() {
         currentPath = nil
-        isDrawingStraightLine = false
+        currentKind = .freehand
         needsDisplay = true
+    }
+
+    /// Remove the last finished stroke
+    func undoLastStroke() {
+        guard currentPath == nil, !completedPaths.isEmpty else { return }
+
+        completedPaths.removeLast()
+        pathTimestamps.removeLast()
+        if completedPaths.isEmpty {
+            clearAllPathsImmediately()
+        }
+        needsDisplay = true
+    }
+
+    // Adds the straight part (and the arrowhead) to the stroke; the stroke goes on from its end
+    private func appendSegment(to path: NSBezierPath) {
+        path.line(to: segmentEnd)
+        if currentKind == .arrow, let head = arrowHead(from: segmentStart, to: segmentEnd) {
+            path.append(head)
+            path.move(to: segmentEnd)
+        }
+    }
+
+    // Two short lines back from the tip; nil while the arrow is too short to point anywhere
+    private func arrowHead(from start: CGPoint, to end: CGPoint) -> NSBezierPath? {
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        guard hypot(dx, dy) >= 2 else { return nil }
+
+        let angle = atan2(dy, dx)
+        let length = max(16, settings.drawingWidth * 3.5)
+        let spread = CGFloat.pi / 6
+        let head = NSBezierPath()
+        for side in [angle + .pi - spread, angle + .pi + spread] {
+            head.move(to: end)
+            head.line(to: CGPoint(x: end.x + length * cos(side), y: end.y + length * sin(side)))
+        }
+        return head
     }
 
     // MARK: - Countdown Management
@@ -251,7 +262,7 @@ class DrawView: NSView {
         completedPaths.removeAll()
         pathTimestamps.removeAll()
         currentPath = nil
-        isDrawingStraightLine = false
+        currentKind = .freehand
         lastDrawingCompletedTime = nil
         isFading = false
         fadeStartTime = nil
@@ -280,56 +291,40 @@ class DrawView: NSView {
 
         // Draw all completed paths with neon glow
         for path in completedPaths {
-            // Set up shadow for neon effect
-            context.setShadow(
-                offset: .zero,
-                blur: 12.0,
-                color: settings.drawingColor.withAlphaComponent(0.8 * fadeAlpha).cgColor
-            )
-
-            settings.drawingColor.withAlphaComponent(0.85 * fadeAlpha).setStroke()
-            path.lineWidth = settings.drawingWidth  // Bolder line
-            path.lineCapStyle = .round
-            path.lineJoinStyle = .round
-            path.stroke()
+            stroke(path, alpha: fadeAlpha, in: context)
         }
 
         // Draw current path (in progress) - always full opacity
         if let path = currentPath {
-            if isDrawingStraightLine {
-                // Draw straight line from start to current endpoint with neon glow
-                let straightPath = NSBezierPath()
-                straightPath.move(to: currentPathStartPoint)
-                straightPath.line(to: currentLineEndPoint)
-                straightPath.lineWidth = settings.drawingWidth
-                straightPath.lineCapStyle = .round
+            stroke(path, alpha: 1, in: context)
 
-                // Neon glow for straight line
-                context.setShadow(
-                    offset: .zero,
-                    blur: 12.0,
-                    color: settings.drawingColor.withAlphaComponent(0.8).cgColor
-                )
-
-                settings.drawingColor.withAlphaComponent(0.85).setStroke()
-                straightPath.stroke()
-            } else {
-                // Draw freehand path with neon glow
-                context.setShadow(
-                    offset: .zero,
-                    blur: 12.0,
-                    color: settings.drawingColor.withAlphaComponent(0.8).cgColor
-                )
-
-                settings.drawingColor.withAlphaComponent(0.85).setStroke()
-                path.lineWidth = settings.drawingWidth
-                path.lineCapStyle = .round
-                path.lineJoinStyle = .round
-                path.stroke()
+            if currentKind != .freehand {
+                let segment = NSBezierPath()
+                segment.move(to: segmentStart)
+                segment.line(to: segmentEnd)
+                if currentKind == .arrow, let head = arrowHead(from: segmentStart, to: segmentEnd) {
+                    segment.append(head)
+                }
+                stroke(segment, alpha: 1, in: context)
             }
         }
 
         // Clear shadow for anything else
         context.setShadow(offset: .zero, blur: 0, color: nil)
+    }
+
+    private func stroke(_ path: NSBezierPath, alpha: CGFloat, in context: CGContext) {
+        // Neon glow
+        context.setShadow(
+            offset: .zero,
+            blur: 12.0,
+            color: settings.drawingColor.withAlphaComponent(0.8 * alpha).cgColor
+        )
+
+        settings.drawingColor.withAlphaComponent(0.85 * alpha).setStroke()
+        path.lineWidth = settings.drawingWidth
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        path.stroke()
     }
 }

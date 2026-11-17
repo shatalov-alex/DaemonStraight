@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Arrows: hold `⇧⌘` and move the mouse while drawing mode is on. Like straight lines, they can be switched to and from
+  in the middle of a stroke.
+- Undo the last stroke with `⌃⌥⌘U` (can be changed in Settings › Drawing) or from the menu.
+
+### Fixed
+
+- With Caps Lock on, a new stroke made all drawings fade three seconds later. Now they stay until Caps Lock is off.
+- Pressing `⇧` without moving the mouse (typing capitals while drawing mode is on) no longer restarts the fade countdown.
+- After switching from freehand to a straight line mid-stroke, the line now starts where the freehand part ends, as it is
+  shown while drawing.
+
 ## [1.3.1] - 2026-11-17
 
 ### Fixed
