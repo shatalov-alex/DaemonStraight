@@ -21,8 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a color) to draw with it, Esc or `⌃⌥⌘C` closes it. The number isn't typed into the app in front. Each stroke keeps
   its color. A setting decides whether the picked color is kept or drawing goes back to the line color when drawing
   mode is turned off.
-- A **Hotkeys** tab in Settings with all hotkeys; hotkeys with `=`, `-`, `[`, `]` and other punctuation keys are shown
-  by name instead of `?`.
+- A **Hotkeys** tab in Settings with all hotkeys; hotkeys with punctuation, Space, Return, Tab, Delete, navigation keys,
+  F13–F20 and keypad keys are shown by name instead of `?`.
+- README: new settings screenshots and short recordings of each feature.
 - The cursor ring fades in and out when mouse highlighting is turned on or off.
 - **Animation Durations** in Settings (the triangle at the bottom of the window): the mouse click animation, the ring
   fade, how long keycaps stay and slide, and how long drawings stay and fade. The defaults are the previous durations.

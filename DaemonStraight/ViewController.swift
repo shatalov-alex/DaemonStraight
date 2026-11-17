@@ -27,17 +27,6 @@ class ViewController: NSViewController {
     // Moves the lens once per screen refresh (macOS 14+); on older systems the 60 fps timer does it
     private var zoomDisplayLink: AnyObject?
 
-    // Modes
-    var mouseHighlightMode: Bool = false  // Start with mouse highlighting OFF
-    var drawingMode: Bool = false
-    var shortcutCatcherMode: Bool = false  // Start with keyboard display OFF
-
-    // Timing
-    var drawingDisapperaTimer: Timer?
-    var mouseLocation: CGPoint = .zero
-    var mousePath: NSBezierPath?
-    var mouseUpdateCount: Int = 0  // For periodic logging
-
     // Event monitors
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
@@ -659,7 +648,6 @@ class ViewController: NSViewController {
     // MARK: - Public Controls
     func toggleDrawingMode() {
         drawingIsOn.toggle()
-        drawingMode = drawingIsOn
 
         if !drawingIsOn {
             // Cancel any active drawing and clear all paths
@@ -671,7 +659,6 @@ class ViewController: NSViewController {
 
     func toggleMouseHighlight() {
         mouseIsOn.toggle()
-        mouseHighlightMode = mouseIsOn
 
         guard let circle = mouseCircleView else { return }
         if mouseIsOn {
@@ -692,7 +679,6 @@ class ViewController: NSViewController {
 
     func toggleShortcutCatcher() {
         shortcutsCatchIsOn.toggle()
-        shortcutCatcherMode = shortcutsCatchIsOn
 
         if !shortcutsCatchIsOn {
             shortcutsView?.clearAll()
