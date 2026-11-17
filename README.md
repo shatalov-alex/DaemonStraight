@@ -27,6 +27,8 @@
   out after a few seconds, as do clicks made with modifiers, such as `⌘ Click`. Keys are detected by physical position,
   so they are shown correctly with any keyboard layout.
 - **Spotlight.** Dims the screen except a soft circle around the pointer, so the audience looks exactly where you point.
+- **Zoom.** A round lens follows the pointer and enlarges what's under it, so small text and details are readable
+  in a shared screen.
 - **On-screen drawing.** Hold `⇧` and move the mouse to draw freehand, or hold `⌃⇧` for straight lines. Drawings fade
   out automatically shortly after you release the keys.
 - **Click-through overlay.** The overlay never takes focus or intercepts clicks, so you keep working normally.
@@ -49,6 +51,7 @@
 
 - macOS 13.5 or later
 - Accessibility permission (needed to observe global keyboard and mouse events; see [Privacy](#privacy))
+- Screen Recording permission, only for Zoom
 - To build from source: Xcode 16 or later
 
 ## Installation
@@ -104,7 +107,12 @@ Toggle features from the menu bar icon or with the default hotkeys:
 | Shortcut display    | `⌃⌥⌘K`  |
 | Drawing mode        | `⌃⌥⌘D`  |
 | Spotlight           | `⌃⌥⌘S`  |
+| Zoom                | `⌃⌥⌘Z`  |
 | All features on/off | `⌃⌥⌘A`  |
+
+The first time you turn on Zoom, macOS asks for the Screen Recording permission. Allow DaemonStraight in
+**System Settings → Privacy & Security → Screen & System Audio Recording**, then restart the app if Zoom stays off.
+**Turn All On** doesn't include Zoom, but **Turn All Off** turns it off too.
 
 By default all features are off when the app starts. Choose the ones that turn on at launch in
 **Settings → General → At Launch**.
@@ -134,7 +142,8 @@ Drawings fade out three seconds after you release `⇧`.
 
 Open **Settings…** from the menu bar icon (or press `⌘,` while the menu is open) to change:
 
-- **Mouse:** ring colors (idle, left click, right click), diameter and ring width; spotlight diameter and dimming
+- **Mouse:** ring colors (idle, left click, right click), diameter and ring width; spotlight diameter and dimming;
+  zoom lens diameter and magnification
 - **Keyboard:** which keys the shortcut display shows (modifiers, function keys, special keys, clicks with modifiers
   and, optionally, plain typing), the screen corner and the key size
 - **Drawing:** line color and width
@@ -154,6 +163,8 @@ DaemonStraight observes keyboard and mouse events only to draw the overlay in re
   as with any download, GitHub can see your IP address.
 - Updates are installed only after you confirm them, and their signature is checked first. They are handled by a
   helper from the [Sparkle](https://sparkle-project.org) framework; the app itself has no network permission.
+- Zoom shows a live picture of the screen around the pointer. The picture is only displayed in the lens: it's never
+  saved, recorded or sent anywhere, and the screen isn't captured at all while Zoom is off.
 - Settings are stored locally in the app's preferences (`UserDefaults`).
 
 ### Verifying a download
@@ -177,6 +188,7 @@ DaemonStraight/
 ├── TransparentOverlayWindow.swift   Full-screen, click-through overlay window (one per display)
 ├── CircleView.swift                 Cursor highlight rings and click animation
 ├── SpotlightView.swift              Dimmed screen with a circle around the cursor
+├── ZoomView.swift                   Magnifying lens around the cursor (ScreenCaptureKit)
 ├── DrawView.swift                   Drawing canvas with fade-out
 ├── ShortcutPressedViewContainer.swift, ShortcutPressedView.swift,
 │   ButtonView.swift, BlurredView.swift, KeyShape.swift, KeyMapping.swift
