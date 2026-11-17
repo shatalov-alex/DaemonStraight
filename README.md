@@ -113,6 +113,17 @@ Toggle features from the menu bar icon or with the default hotkeys:
 | Zoom                | `⌃⌥⌘Z`  |
 | All features on/off | `⌃⌥⌘A`  |
 
+While presenting:
+
+| Action                                         | Hotkey          |
+| ---------------------------------------------- | --------------- |
+| Zoom in / out (with Zoom off: larger / smaller spotlight) | `⌃⌥⌘=` / `⌃⌥⌘-` |
+| Larger / smaller zoom lens                     | `⌃⌥⌘]` / `⌃⌥⌘[` |
+| Drawing color palette                          | `⌃⌥⌘C`          |
+| Undo the last stroke                           | `⌃⌥⌘U`          |
+
+Sizes changed with the hotkeys are saved, like the sliders in Settings.
+
 The first time you turn on Zoom, macOS asks for the Screen Recording permission. Allow DaemonStraight in
 **System Settings → Privacy & Security → Screen & System Audio Recording**, then restart the app if Zoom stays off.
 **Turn All On** doesn't include Zoom, but **Turn All Off** turns it off too.
@@ -148,6 +159,7 @@ While drawing mode is on:
 | Keep drawings on screen    | Hold `⌘`, `⌥`, `⌃` or Caps Lock         |
 | Clear immediately          | Menu bar → **Clear Drawing**            |
 | Undo the last stroke       | `⌃⌥⌘U` or menu bar → **Undo Last Stroke** |
+| Change the color           | `⌃⌥⌘C`, then the color's number (Esc or `⌃⌥⌘C` closes the palette); each stroke keeps its color |
 
 Drawings fade out three seconds after you release `⇧` (by default, see **Animation Durations** below). With Caps Lock on they stay, including new ones, until you
 turn Caps Lock off.
@@ -160,8 +172,10 @@ Open **Settings…** from the menu bar icon (or press `⌘,` while the menu is o
   zoom lens diameter and magnification
 - **Keyboard:** which keys the shortcut display shows (modifiers, function keys, special keys, clicks with modifiers
   and, optionally, plain typing), the screen corner and the key size
-- **Drawing:** line color and width, and the undo hotkey
-- **General:** the toggle hotkeys (each must include at least one of `⌃`, `⌥` or `⌘`), the features that turn on at launch
+- **Drawing:** line color and width, the palette colors (up to 9), and whether a color picked from the palette is kept
+  (by default drawing goes back to the line color when drawing mode is turned off)
+- **Hotkeys:** the toggle hotkeys and the ones used while presenting (each must include at least one of `⌃`, `⌥` or `⌘`)
+- **General:** the features that turn on at launch
   and whether to check for updates when the app starts
 - **Animation Durations** (the triangle at the bottom of the window): how long the mouse click animation, the ring
   fading in and out, keycaps on screen and their slide, drawings on screen and their fade take

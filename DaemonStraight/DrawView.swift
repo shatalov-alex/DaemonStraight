@@ -17,10 +17,12 @@ class DrawView: NSView {
 
     // MARK: - Properties
     private let settings = SettingsManager.shared
-    private var completedPaths: [NSBezierPath] = []
+    // Each stroke keeps the color it was drawn with
+    private var completedPaths: [(path: NSBezierPath, color: NSColor)] = []
     private var pathTimestamps: [Date] = []
     private var currentPath: NSBezierPath?
     private var currentKind: StrokeKind = .freehand
+    private var currentColor: NSColor = .red
     // The straight part (line or arrow) being drawn: from where the stroke was when it started, to the mouse
     private var segmentStart: CGPoint = .zero
     private var segmentEnd: CGPoint = .zero
@@ -71,6 +73,7 @@ class DrawView: NSView {
         path.move(to: point)
         currentPath = path
         currentKind = kind
+        currentColor = settings.currentDrawingColor
         segmentStart = point
         segmentEnd = point
 
@@ -119,7 +122,7 @@ class DrawView: NSView {
         currentKind = .freehand
 
         if path.bounds.width >= 1 || path.bounds.height >= 1 {
-            completedPaths.append(path)
+            completedPaths.append((path, currentColor))
             pathTimestamps.append(Date())
             lastDrawingCompletedTime = Date()
         }
@@ -290,13 +293,13 @@ class DrawView: NSView {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
         // Draw all completed paths with neon glow
-        for path in completedPaths {
-            stroke(path, alpha: fadeAlpha, in: context)
+        for (path, color) in completedPaths {
+            stroke(path, color: color, alpha: fadeAlpha, in: context)
         }
 
         // Draw current path (in progress) - always full opacity
         if let path = currentPath {
-            stroke(path, alpha: 1, in: context)
+            stroke(path, color: currentColor, alpha: 1, in: context)
 
             if currentKind != .freehand {
                 let segment = NSBezierPath()
@@ -305,7 +308,7 @@ class DrawView: NSView {
                 if currentKind == .arrow, let head = arrowHead(from: segmentStart, to: segmentEnd) {
                     segment.append(head)
                 }
-                stroke(segment, alpha: 1, in: context)
+                stroke(segment, color: currentColor, alpha: 1, in: context)
             }
         }
 
@@ -313,15 +316,15 @@ class DrawView: NSView {
         context.setShadow(offset: .zero, blur: 0, color: nil)
     }
 
-    private func stroke(_ path: NSBezierPath, alpha: CGFloat, in context: CGContext) {
+    private func stroke(_ path: NSBezierPath, color: NSColor, alpha: CGFloat, in context: CGContext) {
         // Neon glow
         context.setShadow(
             offset: .zero,
             blur: 12.0,
-            color: settings.drawingColor.withAlphaComponent(0.8 * alpha).cgColor
+            color: color.withAlphaComponent(0.8 * alpha).cgColor
         )
 
-        settings.drawingColor.withAlphaComponent(0.85 * alpha).setStroke()
+        color.withAlphaComponent(0.85 * alpha).setStroke()
         path.lineWidth = settings.drawingWidth
         path.lineCapStyle = .round
         path.lineJoinStyle = .round

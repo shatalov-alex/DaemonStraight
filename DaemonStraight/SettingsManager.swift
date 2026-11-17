@@ -60,6 +60,14 @@ class SettingsManager {
         static let zoomToggleHotkey = "zoomToggleHotkey"
         static let allToggleHotkey = "allToggleHotkey"
         static let undoDrawingHotkey = "undoDrawingHotkey"
+        static let nextDrawingColorHotkey = "nextDrawingColorHotkey"
+        static let zoomInHotkey = "zoomInHotkey"
+        static let zoomOutHotkey = "zoomOutHotkey"
+        static let lensLargerHotkey = "lensLargerHotkey"
+        static let lensSmallerHotkey = "lensSmallerHotkey"
+        static let rememberDrawingColor = "rememberDrawingColor"
+        static let paletteColors = "paletteColors"
+        static let paletteColorCount = "paletteColorCount"
 
         // Animation durations
         static let clickAnimationDuration = "clickAnimationDuration"
@@ -294,6 +302,17 @@ class SettingsManager {
             case 109: return "F10"
             case 103: return "F11"
             case 111: return "F12"
+            case 24: return "="
+            case 27: return "-"
+            case 30: return "]"
+            case 33: return "["
+            case 39: return "'"
+            case 41: return ";"
+            case 42: return "\\"
+            case 43: return ","
+            case 44: return "/"
+            case 47: return "."
+            case 50: return "`"
             case 123: return "←"
             case 124: return "→"
             case 125: return "↓"
@@ -374,6 +393,87 @@ class SettingsManager {
     var undoDrawingHotkey: Hotkey {
         get { hotkey(forKey: Keys.undoDrawingHotkey) ?? Hotkey(keyCode: 32, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
         set { setHotkey(newValue, forKey: Keys.undoDrawingHotkey) }
+    }
+
+    // ⌃⌥⌘C
+    var nextDrawingColorHotkey: Hotkey {
+        get { hotkey(forKey: Keys.nextDrawingColorHotkey) ?? Hotkey(keyCode: 8, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.nextDrawingColorHotkey) }
+    }
+
+    // ⌃⌥⌘= : zoom in, or a larger spotlight when Zoom is off
+    var zoomInHotkey: Hotkey {
+        get { hotkey(forKey: Keys.zoomInHotkey) ?? Hotkey(keyCode: 24, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.zoomInHotkey) }
+    }
+
+    // ⌃⌥⌘-
+    var zoomOutHotkey: Hotkey {
+        get { hotkey(forKey: Keys.zoomOutHotkey) ?? Hotkey(keyCode: 27, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.zoomOutHotkey) }
+    }
+
+    // ⌃⌥⌘]
+    var lensLargerHotkey: Hotkey {
+        get { hotkey(forKey: Keys.lensLargerHotkey) ?? Hotkey(keyCode: 30, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.lensLargerHotkey) }
+    }
+
+    // ⌃⌥⌘[
+    var lensSmallerHotkey: Hotkey {
+        get { hotkey(forKey: Keys.lensSmallerHotkey) ?? Hotkey(keyCode: 33, modifiers: NSEvent.ModifierFlags([.control, .option, .command]).rawValue) }
+        set { setHotkey(newValue, forKey: Keys.lensSmallerHotkey) }
+    }
+
+    // MARK: - Drawing Color Picked With the Hotkey
+
+    /// Whether a color picked with the hotkey becomes the Line Color setting
+    var rememberDrawingColor: Bool {
+        get { defaults.bool(forKey: Keys.rememberDrawingColor) }
+        set { defaults.set(newValue, forKey: Keys.rememberDrawingColor) }
+    }
+
+    /// All 9 palette slots; the first `paletteColorCount` are offered
+    static let maxPaletteColors = 9
+    private static let defaultPaletteColors: [NSColor] = [
+        .red, .systemYellow, .systemGreen, .systemBlue, .white, .systemOrange, .systemPurple, .systemPink, .black,
+    ]
+
+    var paletteColors: [NSColor] {
+        get {
+            guard let data = defaults.data(forKey: Keys.paletteColors),
+                  let colors = try? NSKeyedUnarchiver.unarchivedArrayOfObjects(ofClass: NSColor.self, from: data),
+                  colors.count == Self.maxPaletteColors else {
+                return Self.defaultPaletteColors
+            }
+            return colors
+        }
+        set {
+            if let data = try? NSKeyedArchiver.archivedData(withRootObject: newValue, requiringSecureCoding: true) {
+                defaults.set(data, forKey: Keys.paletteColors)
+            }
+        }
+    }
+
+    var paletteColorCount: Int {
+        get {
+            let count = defaults.integer(forKey: Keys.paletteColorCount)
+            return (1...Self.maxPaletteColors).contains(count) ? count : 5
+        }
+        set { defaults.set(newValue, forKey: Keys.paletteColorCount) }
+    }
+
+    /// The colors offered by the palette
+    var activePaletteColors: [NSColor] {
+        Array(paletteColors.prefix(paletteColorCount))
+    }
+
+    /// A color picked with the hotkey that isn't saved; dropped when drawing mode is turned off
+    var temporaryDrawingColor: NSColor?
+
+    /// The color new strokes are drawn with
+    var currentDrawingColor: NSColor {
+        temporaryDrawingColor ?? drawingColor
     }
 
     // MARK: - Animation Durations (seconds)
@@ -461,6 +561,15 @@ class SettingsManager {
         defaults.removeObject(forKey: Keys.zoomToggleHotkey)
         defaults.removeObject(forKey: Keys.allToggleHotkey)
         defaults.removeObject(forKey: Keys.undoDrawingHotkey)
+        defaults.removeObject(forKey: Keys.nextDrawingColorHotkey)
+        defaults.removeObject(forKey: Keys.zoomInHotkey)
+        defaults.removeObject(forKey: Keys.zoomOutHotkey)
+        defaults.removeObject(forKey: Keys.lensLargerHotkey)
+        defaults.removeObject(forKey: Keys.lensSmallerHotkey)
+        defaults.removeObject(forKey: Keys.rememberDrawingColor)
+        defaults.removeObject(forKey: Keys.paletteColors)
+        defaults.removeObject(forKey: Keys.paletteColorCount)
+        temporaryDrawingColor = nil
         defaults.removeObject(forKey: Keys.clickAnimationDuration)
         defaults.removeObject(forKey: Keys.ringFadeDuration)
         defaults.removeObject(forKey: Keys.keycapDisplayTime)
