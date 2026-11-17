@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Arrows: hold `⇧⌘` and move the mouse while drawing mode is on. Like straight lines, they can be switched to and from
   in the middle of a stroke.
-- Undo the last stroke with `⌃⌥⌘U` (can be changed in Settings › Drawing) or from the menu.
+- Undo the last stroke with `⌃⌥⌘U` (can be changed in Settings › Hotkeys) or from the menu.
 - Shortcuts actions: **Turn DaemonStraight Feature On or Off** (any feature or all of them; on, off or toggle) and
   **Clear DaemonStraight Drawing**.
 - Hotkeys while presenting: `⌃⌥⌘=` / `⌃⌥⌘-` zoom in and out (with Zoom off, they make the spotlight larger or
