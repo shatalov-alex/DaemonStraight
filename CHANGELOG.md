@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-17
+
 ### Fixed
 
 - Opening the app from Shortcuts or Spotlight no longer takes the focus from the app you're in. Before, key presses
@@ -80,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for multiple displays.
 - Settings for colors, sizes, displayed keys and toggle hotkeys.
 
-[Unreleased]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.1.0...v1.2.0
