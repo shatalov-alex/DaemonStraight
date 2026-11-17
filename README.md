@@ -141,7 +141,7 @@ While drawing mode is on:
 | Clear immediately          | Menu bar → **Clear Drawing**            |
 | Undo the last stroke       | `⌃⌥⌘U` or menu bar → **Undo Last Stroke** |
 
-Drawings fade out three seconds after you release `⇧`. With Caps Lock on they stay, including new ones, until you
+Drawings fade out three seconds after you release `⇧` (by default, see **Animation Durations** below). With Caps Lock on they stay, including new ones, until you
 turn Caps Lock off.
 
 ### Settings
@@ -155,6 +155,8 @@ Open **Settings…** from the menu bar icon (or press `⌘,` while the menu is o
 - **Drawing:** line color and width, and the undo hotkey
 - **General:** the toggle hotkeys (each must include at least one of `⌃`, `⌥` or `⌘`), the features that turn on at launch
   and whether to check for updates when the app starts
+- **Animation Durations** (the triangle at the bottom of the window): how long the mouse click animation, the ring
+  fading in and out, keycaps on screen and their slide, drawings on screen and their fade take
 
 Changes apply immediately and are saved automatically.
 

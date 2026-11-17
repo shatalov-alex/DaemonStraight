@@ -63,6 +63,28 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var launchSpotlightCheckbox: NSButton!
     private var checkForUpdatesCheckbox: NSButton!
 
+    // Animation durations: a panel below the tabs, shown with the disclosure triangle
+    private struct DurationSetting {
+        let title: String
+        let range: ClosedRange<Double>
+        let step: Double
+        let keyPath: ReferenceWritableKeyPath<SettingsManager, TimeInterval>
+    }
+    // Two per row
+    private let durationSettings: [DurationSetting] = [
+        DurationSetting(title: "Mouse click:", range: 0.05...1, step: 0.05, keyPath: \.clickAnimationDuration),
+        DurationSetting(title: "Ring on/off:", range: 0...1, step: 0.05, keyPath: \.ringFadeDuration),
+        DurationSetting(title: "Keycaps shown:", range: 1...10, step: 0.5, keyPath: \.keycapDisplayTime),
+        DurationSetting(title: "Keycap slide:", range: 0...1, step: 0.05, keyPath: \.keycapAnimationDuration),
+        DurationSetting(title: "Drawings stay:", range: 1...30, step: 0.5, keyPath: \.drawingHoldTime),
+        DurationSetting(title: "Drawing fade:", range: 0...3, step: 0.1, keyPath: \.drawingFadeDuration),
+    ]
+    private var durationControls: [(slider: NSSlider, label: NSTextField)] = []
+    private var tabView: NSTabView!
+    private var advancedButton: NSButton!
+    private var advancedPanel: NSView!
+    private let advancedPanelHeight: CGFloat = 130
+
     convenience init() {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 560),
@@ -85,7 +107,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let contentView = NSView(frame: window.contentLayoutRect)
         window.contentView = contentView
 
-        let tabView = NSTabView(frame: NSRect(x: 12, y: 60, width: 576, height: 488))
+        tabView = NSTabView(frame: NSRect(x: 12, y: 60, width: 576, height: 488))
         contentView.addSubview(tabView)
         tabView.addTabViewItem(createTab("Mouse", in: tabView, setup: setupMouseTab))
         tabView.addTabViewItem(createTab("Keyboard", in: tabView, setup: setupKeyboardTab))
@@ -99,6 +121,23 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         resetButton.target = self
         resetButton.action = #selector(resetToDefaults)
         contentView.addSubview(resetButton)
+
+        advancedButton = NSButton(frame: NSRect(x: 200, y: 26, width: 20, height: 20))
+        advancedButton.bezelStyle = .disclosure
+        advancedButton.setButtonType(.pushOnPushOff)
+        advancedButton.title = ""
+        advancedButton.state = .off
+        advancedButton.target = self
+        advancedButton.action = #selector(toggleAdvancedPanel)
+        contentView.addSubview(advancedButton)
+        let advancedLabel = createLabel("Animation Durations", frame: NSRect(x: 222, y: 27, width: 200, height: 18))
+        advancedLabel.alignment = .left
+        contentView.addSubview(advancedLabel)
+
+        advancedPanel = NSView(frame: NSRect(x: 12, y: 60, width: 576, height: advancedPanelHeight))
+        advancedPanel.isHidden = true
+        setupAdvancedPanel(advancedPanel)
+        contentView.addSubview(advancedPanel)
 
         let closeButton = NSButton(frame: NSRect(x: 470, y: 20, width: 100, height: 32))
         closeButton.title = "Close"
@@ -220,11 +259,75 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let hint = NSTextField(wrappingLabelWithString: """
             Hold ⇧ and move the mouse to draw. Add ⌃ for a straight line or ⌘ for an arrow; \
             they can be switched in the middle of a stroke.
-            Drawings fade 3 seconds after ⇧ is released. Holding ⌘, ⌥ or ⌃, or turning on Caps Lock, keeps them.
+            Drawings fade a few seconds after ⇧ is released (see Animation Durations below). Holding ⌘, ⌥ or ⌃, \
+            or turning on Caps Lock, keeps them.
             """)
         hint.frame = NSRect(x: 30, y: yPosition - 50, width: 500, height: 70)
         hint.textColor = .secondaryLabelColor
         view.addSubview(hint)
+    }
+
+    // MARK: - Animation Durations
+    private func setupAdvancedPanel(_ view: NSView) {
+        var yPosition = advancedPanelHeight - 30
+        view.addSubview(createSectionLabel("Animation Durations", frame: NSRect(x: 8, y: yPosition, width: 520, height: 24)))
+        yPosition -= 30
+
+        for (index, setting) in durationSettings.enumerated() {
+            let x: CGFloat = index.isMultiple(of: 2) ? 0 : 290
+            view.addSubview(createLabel(setting.title, frame: NSRect(x: x, y: yPosition, width: 125, height: 20)))
+            let slider = NSSlider(frame: NSRect(x: x + 132, y: yPosition, width: 95, height: 20))
+            slider.minValue = setting.range.lowerBound
+            slider.maxValue = setting.range.upperBound
+            slider.target = self
+            slider.action = #selector(durationChanged)
+            view.addSubview(slider)
+            let valueLabel = createLabel("", frame: NSRect(x: x + 232, y: yPosition, width: 55, height: 20))
+            valueLabel.alignment = .left
+            view.addSubview(valueLabel)
+            durationControls.append((slider, valueLabel))
+            if !index.isMultiple(of: 2) {
+                yPosition -= 30
+            }
+        }
+    }
+
+    // The window grows downwards; the tabs stay where they are on screen
+    @objc private func toggleAdvancedPanel() {
+        guard let window = window else { return }
+        let show = advancedButton.state == .on
+        let delta = show ? advancedPanelHeight : -advancedPanelHeight
+
+        var frame = window.frame
+        frame.size.height += delta
+        frame.origin.y -= delta
+        if let visible = window.screen?.visibleFrame, frame.minY < visible.minY {
+            frame.origin.y = visible.minY
+        }
+        advancedPanel.isHidden = !show
+        tabView.frame.origin.y = show ? 60 + advancedPanelHeight : 60
+        window.setFrame(frame, display: true)
+    }
+
+    private func loadDurations() {
+        for (setting, controls) in zip(durationSettings, durationControls) {
+            let value = settings[keyPath: setting.keyPath]
+            controls.slider.doubleValue = value
+            controls.label.stringValue = Self.formatDuration(value, step: setting.step)
+        }
+    }
+
+    @objc private func durationChanged() {
+        for (setting, controls) in zip(durationSettings, durationControls) {
+            let value = (controls.slider.doubleValue / setting.step).rounded() * setting.step
+            settings[keyPath: setting.keyPath] = value
+            controls.label.stringValue = Self.formatDuration(value, step: setting.step)
+        }
+        NotificationCenter.default.post(name: NSNotification.Name("SettingsChanged"), object: nil)
+    }
+
+    private static func formatDuration(_ value: TimeInterval, step: Double) -> String {
+        String(format: step < 0.1 ? "%.2f s" : "%.1f s", value)
     }
 
     // MARK: - General Tab
@@ -377,6 +480,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         launchSpotlightCheckbox.state = settings.launchWithSpotlight ? .on : .off
         checkForUpdatesCheckbox.state = settings.checkForUpdatesAtLaunch ? .on : .off
 
+        loadDurations()
         updateSliderLabels()
     }
 

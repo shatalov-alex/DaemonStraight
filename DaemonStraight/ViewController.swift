@@ -221,6 +221,12 @@ class ViewController: NSViewController {
             updateMouseHighlight(at: location)
         }
 
+        // The global monitors don't see events that go to this app: a press released over its menu or
+        // Settings window would leave the ring pressed
+        if let circle = mouseCircleView, circle.isPressed, NSEvent.pressedMouseButtons == 0 {
+            circle.stopShrinking()
+        }
+
         if spotlightIsOn {
             updateSpotlight(at: location)
         }
@@ -666,11 +672,21 @@ class ViewController: NSViewController {
         mouseIsOn.toggle()
         mouseHighlightMode = mouseIsOn
 
-        if !mouseIsOn {
-            mouseCircleView?.isHidden = true
-        } else {
-            mouseCircleView?.isHidden = false
+        guard let circle = mouseCircleView else { return }
+        if mouseIsOn {
+            circle.alphaValue = 0
+            circle.isHidden = false
+            updateMouseHighlight(at: NSEvent.mouseLocation)
         }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = settings.ringFadeDuration
+            circle.animator().alphaValue = mouseIsOn ? 1 : 0
+        }, completionHandler: { [weak self] in
+            // Turned on again while fading out: stays visible
+            if self?.mouseIsOn == false {
+                circle.isHidden = true
+            }
+        })
     }
 
     func toggleShortcutCatcher() {

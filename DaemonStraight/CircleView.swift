@@ -40,6 +40,9 @@ class CircleView: NSView {
     private var isShrinking = false  // Track if currently animating shrink
     private var shrinkTimer: Timer?  // Timer for continuous shrinking
 
+    /// The ring shows a mouse button held down
+    var isPressed: Bool { isShrinking }
+
     // MARK: - Initialization
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -234,7 +237,7 @@ class CircleView: NSView {
 
         // Simple approach: just animate to the new state
         let animation = CAAnimationGroup()
-        animation.duration = 0.2
+        animation.duration = settings.clickAnimationDuration
         animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
 
         let pathAnim = CABasicAnimation(keyPath: "path")
@@ -266,7 +269,7 @@ class CircleView: NSView {
 
         // Simple approach: just animate back to original state
         let animation = CAAnimationGroup()
-        animation.duration = 0.3
+        animation.duration = settings.clickAnimationDuration * 1.5
         animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
 
         let pathAnim = CABasicAnimation(keyPath: "path")
