@@ -2,17 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string></string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Default</string>
-		</dict>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -28,8 +17,6 @@
 	</array>
 	<key>LSUIElement</key>
 	<true/>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>DaemonStraight needs to monitor keyboard events to display shortcuts during presentations.</string>
 	<key>SUEnableAutomaticChecks</key>
 	<false/>
 	<key>SUEnableDownloaderService</key>
@@ -40,7 +27,5 @@
 	<string>https://github.com/shatalov-alex/DaemonStraight/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>TVtLlt5H2etDTyrzXaQMtHcrUPlZKVQ0E6nxXvK8sa0=</string>
-	<key>NSSystemAdministrationUsageDescription</key>
-	<string>DaemonStraight needs accessibility access to monitor keyboard and mouse events for presentation assistance features like mouse highlighting and keyboard shortcuts display.</string>
 </dict>
 </plist>

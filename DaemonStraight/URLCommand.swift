@@ -13,8 +13,12 @@ enum URLCommand: Equatable {
     case feature(ShortcutsFeature, on: Bool?)
     case clearDrawing
 
+    // The Debug build has its own, so a link can't open the wrong app
+    private static let schemes = ["daemonstraight", "daemonstraight-debug"]
+
     /// nil for anything else: any app or web page can open a link, so nothing is guessed
     init?(_ url: URL) {
+        guard let scheme = url.scheme?.lowercased(), Self.schemes.contains(scheme) else { return nil }
         guard let host = url.host?.lowercased() else { return nil }
         let path = url.pathComponents.filter { $0 != "/" }.map { $0.lowercased() }
 

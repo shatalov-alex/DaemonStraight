@@ -166,7 +166,19 @@ So a shortcut can open the app and turn on just the features one kind of meeting
 > **Note:** macOS runs these two actions only for apps signed with an Apple developer certificate. The downloadable
 > releases aren't yet, so there Shortcuts says that it "couldn't communicate with the app". Use links instead.
 
-Links do the same and work in every build. In Shortcuts, add the **Open URLs** action with one of them:
+Links do the same and work in every build.
+
+#### Set up links in Shortcuts
+
+1. Open **Shortcuts** and open your shortcut, or click **+** for a new one.
+2. Search the actions for **Open URLs** and double-click it.
+3. Click the **URL** field and paste a link, for example `daemonstraight://mouse/on`.
+4. Add another **Open URLs** action for each further feature.
+5. Click **▶** to test. If macOS asks for permission, choose **Always Allow**.
+
+You don't need an **Open App** action: the first link starts DaemonStraight. Put the links before the step that joins the
+meeting, so the meeting window gets the focus last. In shortcuts that run by themselves use `on` and `off`, as the result
+of `toggle` depends on the current state.
 
 | Link                                  | What it does                                              |
 | ------------------------------------- | --------------------------------------------------------- |
@@ -174,7 +186,19 @@ Links do the same and work in every build. In Shortcuts, add the **Open URLs** a
 | `daemonstraight://clear`              | Clears the drawing                                        |
 
 The features are `mouse`, `keyboard`, `drawing`, `spotlight`, `zoom` and `all`; the states are `on`, `off` and `toggle`.
-A link starts DaemonStraight if it isn't running, and the focus stays in the app you're in.
+`all/on` doesn't include Zoom, `all/off` turns it off too. A link starts DaemonStraight if it isn't running, and the focus
+stays in the app you're in.
+
+| To do this                        | Use this link                |
+| --------------------------------- | ---------------------------- |
+| Cursor highlighting on            | `daemonstraight://mouse/on`     |
+| Shortcut display on               | `daemonstraight://keyboard/on`  |
+| Drawing mode on                   | `daemonstraight://drawing/on`   |
+| Spotlight on                      | `daemonstraight://spotlight/on` |
+| Zoom on                           | `daemonstraight://zoom/on`      |
+| Everything on, except Zoom        | `daemonstraight://all/on`       |
+| Everything off                    | `daemonstraight://all/off`      |
+| Clear the drawing                 | `daemonstraight://clear`        |
 
 ### Drawing
 
