@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-24
+
 ### Security
 
 - The app runs with the Hardened Runtime, so other software on the Mac can't load its own code into it through the
@@ -135,7 +137,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for multiple displays.
 - Settings for colors, sizes, displayed keys and toggle hotkeys.
 
-[Unreleased]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/shatalov-alex/DaemonStraight/compare/v1.3.0...v1.3.1
