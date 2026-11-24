@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- The app runs with the Hardened Runtime, so other software on the Mac can't load its own code into it through the
+  environment and use its permissions.
+- Links are accepted only with the app's own scheme.
+- Removed access the app doesn't use: files chosen by the user, an empty document type and two permission texts.
+
+### Changed
+
+- README: how to set up links in Shortcuts.
+
 ## [1.5.0] - 2026-11-24
 
 ### Added

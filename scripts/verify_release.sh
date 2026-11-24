@@ -35,6 +35,9 @@ entitlements() { codesign -d --entitlements - --xml "$1" 2>/dev/null; }
 is_sandboxed() { entitlements "$1" | grep -q 'com.apple.security.app-sandbox'; }
 has_no_network_permission() { ! entitlements "$1" | grep -q 'com.apple.security.network'; }
 has_no_debug_entitlement() { ! entitlements "$1" | grep -q 'get-task-allow'; }
+has_hardened_runtime() { codesign -dv "$1" 2>&1 | grep -q 'flags=.*runtime'; }
+has_no_injection_entitlement() { ! entitlements "$1" | grep -qE 'allow-dyld-environment-variables|allow-unsigned-executable-memory|disable-executable-page-protection|allow-jit'; }
+has_link_scheme() { [ "$(plist_value "$1" :CFBundleURLTypes:0:CFBundleURLSchemes:0)" = "daemonstraight" ]; }
 has_no_local_paths() { ! grep -rqa "$HOME" "$1"; }
 
 # The team ID stays private, so it's read from the ignored local settings
@@ -53,6 +56,9 @@ check_app() {
     check "$2: App Sandbox on" is_sandboxed "$1"
     check "$2: no network permission on the app" has_no_network_permission "$1"
     check "$2: no debug entitlement" has_no_debug_entitlement "$1"
+    check "$2: Hardened Runtime on" has_hardened_runtime "$1"
+    check "$2: no code injection entitlement" has_no_injection_entitlement "$1"
+    check "$2: link scheme" has_link_scheme "$1"
     check "$2: no local paths" has_no_local_paths "$1"
     check "$2: no private team ID" has_no_private_team_id "$1"
 }

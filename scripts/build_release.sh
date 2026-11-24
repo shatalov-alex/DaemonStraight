@@ -62,7 +62,10 @@ if [ -d "$APP_PATH" ]; then
     ENTITLEMENTS="$(mktemp)"
     codesign -d --entitlements - --xml "$APP_PATH" > "$ENTITLEMENTS" 2>/dev/null
     /usr/libexec/PlistBuddy -c "Delete :com.apple.security.get-task-allow" "$ENTITLEMENTS" 2>/dev/null || true
-    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none --entitlements "$ENTITLEMENTS" "$APP_PATH"
+    # Hardened Runtime: other software can't run its code inside the app and use its permissions. It also accepts only
+    # libraries of the same team; this certificate has none, so Sparkle wouldn't load without the exception
+    /usr/libexec/PlistBuddy -c "Add :com.apple.security.cs.disable-library-validation bool true" "$ENTITLEMENTS"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none -o runtime --entitlements "$ENTITLEMENTS" "$APP_PATH"
     rm -f "$ENTITLEMENTS"
 
     echo ""
