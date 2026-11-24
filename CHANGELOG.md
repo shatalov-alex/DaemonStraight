@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Links that turn features on or off and clear the drawing, such as `daemonstraight://mouse/on` (see the README). Use
+  them with the **Open URLs** action of Shortcuts: they work in every build.
+
+### Known issues
+
+- The Shortcuts actions added in 1.4.0 fail in the downloadable releases ("Shortcuts couldn't communicate with the
+  app"): macOS runs them only for apps signed with an Apple developer certificate. Use the links instead.
+
 ## [1.4.0] - 2026-11-17
 
 ### Added

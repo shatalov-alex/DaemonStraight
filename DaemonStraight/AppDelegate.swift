@@ -30,6 +30,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var settingsWindowController: SettingsWindowController?
     private let settings = SettingsManager.shared
     private let updateManager = UpdateManager()
+    // Links that came before the app was ready (a link that starts the app comes first); nil once it is
+    private var pendingURLs: [URL]? = []
 
     // Keyboard shortcut monitors
     private var localHotkeyMonitor: Any?
@@ -69,6 +71,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Setup global keyboard shortcuts
         setupGlobalKeyboardShortcuts()
         NSLog("✅ [AppDelegate] Global keyboard shortcuts setup complete")
+
+        // After the features turned on at launch, so a link has the last word
+        let urls = pendingURLs ?? []
+        pendingURLs = nil
+        urls.forEach(run)
 
         // Setup window maintenance timer
         setupWindowMaintenance()
@@ -638,6 +645,32 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func clearDrawingFromShortcut() {
         clearDrawing()
+    }
+
+    // MARK: - Links
+    // daemonstraight:// links, for the Open URLs action of Shortcuts. Opening one activates the app, and
+    // the focus goes back by itself (see Focus)
+    func application(_ application: NSApplication, open urls: [URL]) {
+        if pendingURLs != nil {
+            pendingURLs?.append(contentsOf: urls)
+        } else {
+            urls.forEach(run)
+        }
+    }
+
+    private func run(_ url: URL) {
+        switch URLCommand(url) {
+        case .feature(let feature, let on):
+            setFeature(feature, on: on)
+        case .clearDrawing:
+            clearDrawing()
+        case nil:
+            NSLog("⚠️  [Links] Ignored a link that isn't known")
+            return
+        }
+        if let controller = overlays.first?.controller {
+            NSLog("🔗 [Links] mouse \(controller.mouseIsOn), keyboard \(controller.shortcutsCatchIsOn), drawing \(controller.drawingIsOn), spotlight \(controller.spotlightIsOn), zoom \(controller.zoomIsOn)")
+        }
     }
 
     @objc private func undoLastStroke() {

@@ -163,6 +163,19 @@ DaemonStraight also adds two actions to Shortcuts:
 
 So a shortcut can open the app and turn on just the features one kind of meeting needs.
 
+> **Note:** macOS runs these two actions only for apps signed with an Apple developer certificate. The downloadable
+> releases aren't yet, so there Shortcuts says that it "couldn't communicate with the app". Use links instead.
+
+Links do the same and work in every build. In Shortcuts, add the **Open URLs** action with one of them:
+
+| Link                                  | What it does                                              |
+| ------------------------------------- | --------------------------------------------------------- |
+| `daemonstraight://<feature>/<state>`  | Turns a feature on or off, for example `daemonstraight://mouse/on` |
+| `daemonstraight://clear`              | Clears the drawing                                        |
+
+The features are `mouse`, `keyboard`, `drawing`, `spotlight`, `zoom` and `all`; the states are `on`, `off` and `toggle`.
+A link starts DaemonStraight if it isn't running, and the focus stays in the app you're in.
+
 ### Drawing
 
 While drawing mode is on:
