@@ -274,6 +274,9 @@ DaemonStraight/
 ├── SpotlightView.swift              Dimmed screen with a circle around the cursor
 ├── ZoomView.swift                   Magnifying lens around the cursor (ScreenCaptureKit)
 ├── DrawView.swift                   Drawing canvas with fade-out
+├── ColorPalettePanel.swift          Numbered drawing colors
+├── URLCommand.swift                 daemonstraight:// links
+├── ShortcutsIntents.swift           Actions for the Shortcuts app
 ├── ShortcutPressedViewContainer.swift, ShortcutPressedView.swift,
 │   ButtonView.swift, BlurredView.swift, KeyShape.swift, KeyMapping.swift
 │                                    Keycap rendering for the shortcut display
@@ -285,6 +288,7 @@ scripts/
 ├── release.sh                       Versions, tags, packages and publishes a release
 ├── verify_release.sh                Self-check of the app and packages before publishing
 ├── create_signing_certificate.sh    Creates the release certificate (run once)
+├── capture_media.sh, media/         Makes the screenshots and recordings of this README
 └── generate_icons.py                Generates the app and menu bar icons (requires Pillow)
 ```
 
