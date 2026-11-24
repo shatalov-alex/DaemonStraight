@@ -31,6 +31,15 @@ enum ShortcutsFeatureState: String, AppEnum {
         .off: "Off",
         .toggle: "Toggle",
     ]
+
+    /// nil: toggle
+    var isOn: Bool? {
+        switch self {
+        case .on: return true
+        case .off: return false
+        case .toggle: return nil
+        }
+    }
 }
 
 struct SetFeatureIntent: AppIntent {
@@ -52,12 +61,7 @@ struct SetFeatureIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        let on: Bool? = switch state {
-        case .on: true
-        case .off: false
-        case .toggle: nil
-        }
-        (NSApp.delegate as? AppDelegate)?.setFeature(feature, on: on)
+        (NSApp.delegate as? AppDelegate)?.setFeature(feature, on: state.isOn)
         return .result()
     }
 }
