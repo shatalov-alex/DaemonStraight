@@ -186,6 +186,9 @@ of `toggle` depends on the current state.
 | `daemonstraight://clear`              | Clears the drawing                                        |
 
 The features are `mouse`, `keyboard`, `drawing`, `spotlight`, `zoom` and `all`; the states are `on`, `off` and `toggle`.
+Any app or web page can open a link, so while **Plain typing** is on in **Settings → Keyboard**, links can't turn the
+shortcut display on (also not with `all/on`). They can always turn it off.
+
 `all/on` doesn't include Zoom, `all/off` turns it off too. A link starts DaemonStraight if it isn't running, and the focus
 stays in the app you're in.
 
