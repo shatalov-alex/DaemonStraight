@@ -170,6 +170,11 @@ for attempt in 1 2 3; do
         "$DIST/DaemonStraight-$VERSION.dmg" "$DIST/DaemonStraight-$VERSION.zip" "$DIST/SHA256SUMS.txt" "$DIST/appcast.xml"; then
         break
     fi
+    # Published although it reported an error: done. It must not be deleted, as releases are immutable
+    # and GitHub wouldn't accept the same version again
+    if [ "$(gh release view "$TAG" -R "$REPO" --json isDraft --jq .isDraft 2>/dev/null)" = "false" ]; then
+        break
+    fi
     [ "$attempt" -lt 3 ] || fail "Creating the GitHub release failed. Notes are in $NOTES - rerun the gh release create step"
     echo "⚠️  Creating the GitHub release failed, retrying in 10 s..."
     gh release delete "$TAG" -R "$REPO" --yes >/dev/null 2>&1 || true  # remove a partly created release, keep the tag

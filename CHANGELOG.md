@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- While Plain typing is on, links can't turn the shortcut display on: any app or web page can open a link, and it must not
+  reveal what is typed.
+
 ## [1.5.1] - 2026-11-24
 
 ### Security

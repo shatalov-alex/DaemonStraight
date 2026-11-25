@@ -617,14 +617,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // MARK: - Shortcuts actions
-    /// Turns a feature on (true), off (false) or over (nil), the same way as its hotkey
-    func setFeature(_ feature: ShortcutsFeature, on: Bool?) {
+    /// Turns a feature on (true), off (false) or over (nil), the same way as its hotkey.
+    /// Without canShowKeys the keyboard display isn't turned on (off always works)
+    func setFeature(_ feature: ShortcutsFeature, on: Bool?, canShowKeys: Bool = true) {
         guard let controller = overlays.first?.controller else { return }
+        let keyboardAllowed = canShowKeys || controller.shortcutsCatchIsOn
         switch feature {
         case .mouse:
             if on != controller.mouseIsOn { toggleMouseHighlight() }
         case .keyboard:
-            if on != controller.shortcutsCatchIsOn { toggleKeyboardDisplay() }
+            if on != controller.shortcutsCatchIsOn && keyboardAllowed { toggleKeyboardDisplay() }
         case .drawing:
             if on != controller.drawingIsOn { toggleDrawingMode() }
         case .spotlight:
@@ -634,9 +636,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .all:
             switch on {
             case nil:
-                toggleAllFeatures()
+                setFeature(.all, on: !anyFeatureIsOn, canShowKeys: canShowKeys)
             case true:
-                setFeatures(mouse: true, keyboard: true, drawing: true, spotlight: true)
+                setFeatures(mouse: true, keyboard: keyboardAllowed, drawing: true, spotlight: true)
             case false:
                 if anyFeatureIsOn { toggleAllFeatures() }
             }
@@ -661,7 +663,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func run(_ url: URL) {
         switch URLCommand(url) {
         case .feature(let feature, let on):
-            setFeature(feature, on: on)
+            // Any app or web page can open a link: with plain typing shown, it must not reveal what is typed
+            setFeature(feature, on: on, canShowKeys: !settings.showAlphanumericKeys)
         case .clearDrawing:
             clearDrawing()
         case nil:
